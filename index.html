@@ -8,8 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- Biblioteca para gerar PDF -->
+  <!-- Bibliotecas para PDF e Som -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <style>
     :root {
       --primary-color: #007BFF;
@@ -30,7 +31,8 @@
       padding-top: 2rem;
       padding-bottom: 2rem;
       font-family: 'Inter', sans-serif;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     /* --- Tela de Abertura --- */
@@ -101,7 +103,21 @@
 
     /* --- Elementos Inteligentes --- */
     #motivational-quote { background-color: rgba(0, 123, 255, 0.05); border-left: 4px solid var(--primary-color); padding: 1rem; margin-bottom: 1.5rem; font-style: italic; color: var(--muted-text-color); opacity: 0; animation: fadeIn 0.5s 0.2s forwards; }
-    #ai-suggestion { font-size: 0.85rem; padding: 0.5rem; background-color: #e7f3ff; border-radius: 0.25rem; display: none; animation: fadeIn 0.5s; }
+    .category-wrapper { position: relative; }
+    #ai-suggestion {
+        position: absolute;
+        top: 0;
+        right: 0;
+        transform: translateY(-90%);
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        background-color: #e7f3ff;
+        border-radius: 1rem;
+        display: none;
+        animation: fadeIn 0.5s;
+        z-index: 10;
+        white-space: nowrap;
+    }
     
     /* --- Mensagem de Sucesso --- */
     #success-message h4 { font-size: 1.5rem; color: var(--success-color); }
@@ -148,7 +164,7 @@
 
 <div id="main-content">
   <div class="container">
-    <div class="position-relative" style="min-height: 750px;">
+    <div class="position-relative">
       <div id="card-flipper" class="card-flipper">
         <!-- Frente do Cartão: Formulário -->
         <div class="card card-front">
@@ -198,10 +214,10 @@
                     <div class="mb-3">
                         <label for="descricao" class="form-label">Descreva o que aconteceu *</label>
                         <textarea id="descricao" name="descricao" rows="5" class="form-control" required maxlength="1000"></textarea>
-                        <div id="ai-suggestion" class="mt-2"></div>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 category-wrapper">
                         <label for="categoria" class="form-label">Categoria</label>
+                        <div id="ai-suggestion"></div>
                         <select id="categoria" name="categoria" class="form-select"> <option value="">Selecione a categoria</option><option>Buraco na via</option> <option>Iluminação pública</option> <option>Vazamento de água</option> <option>Limpeza de terreno / Lixo</option> <option>Poluição sonora</option> <option>Poluição visual</option> <option>Segurança pública</option> <option>Saúde</option> <option>Outro</option> </select>
                     </div>
                     <div id="sub-categoria-iluminacao" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-iluminacao-select" class="form-label">Qual o problema de iluminação?</label> <select id="sub-categoria-iluminacao-select" class="form-select"> <option>Poste com lâmpada queimada</option><option>Poste danificado ou caído</option><option>Fios soltos ou em risco</option><option>Vários postes apagados na rua</option> </select> </div>
@@ -267,12 +283,27 @@
   const { jsPDF } = window.jspdf;
 
   document.addEventListener('DOMContentLoaded', function() {
-    // ... (código de inicialização existente)
     const splashScreen = document.getElementById('splash-screen');
     const mainContent = document.getElementById('main-content');
     const subtitle = document.getElementById('splash-subtitle');
     const greetingEl = document.getElementById('greeting');
     const motivationalQuoteEl = document.getElementById('motivational-quote');
+
+    // Som de radar
+    let radarSoundInterval;
+    const synth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 1 }
+    }).toDestination();
+    
+    // Inicia o som quando a animação começa
+    setTimeout(() => {
+        Tone.start();
+        radarSoundInterval = setInterval(() => {
+            synth.triggerAttackRelease("G5", "8n", Tone.now());
+        }, 1000);
+    }, 500);
+
 
     const motivationalQuotes = [
         "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.",
@@ -282,18 +313,15 @@
     motivationalQuoteEl.textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
     
     const textToType = "A sua voz para uma cidade melhor.";
-    let i = 0;
-    function typeWriter(element, text, onComplete) {
-      if (i < text.length) {
-        element.innerHTML += text.charAt(i); i++;
-        setTimeout(() => typeWriter(element, text, onComplete), 50);
-      } else if (onComplete) { onComplete(); }
-    }
     
-    setTimeout(() => { i = 0; typeWriter(subtitle, textToType); speakWelcomeMessage(); }, 3000);
+    setTimeout(() => {
+        speakWelcomeMessage();
+        subtitle.textContent = textToType; // Remove animação de digitação
+    }, 3000);
 
     setTimeout(() => {
       splashScreen.classList.add('hidden');
+      if (radarSoundInterval) clearInterval(radarSoundInterval); // Para o som
       document.body.style.overflow = 'auto';
       mainContent.classList.add('visible');
     }, 5500);
@@ -310,8 +338,7 @@
     greetingEl.textContent = messages[Math.floor(Math.random() * messages.length)];
   });
 
-  // ... (código de speakWelcomeMessage, steps, validação, etc. existente)
-    function speakWelcomeMessage() {
+  function speakWelcomeMessage() {
     if (typeof SpeechSynthesisUtterance === 'undefined') return;
     try {
         const utterance = new SpeechSynthesisUtterance("Bem-vindo ao Radar Cidadão. A sua voz para uma cidade melhor.");
@@ -402,7 +429,7 @@
       for (const keyword in keywordMap) {
           if (text.includes(keyword)) {
               const category = keywordMap[keyword];
-              aiSuggestionEl.innerHTML = `💡 Sugestão da IA: Parece que isso se enquadra em <strong>${category}</strong>. Selecionamos para você.`;
+              aiSuggestionEl.innerHTML = `💡 Sugestão: <strong>${category}</strong>`;
               aiSuggestionEl.style.display = 'block';
               if (categoriaSelect.value !== category) { categoriaSelect.value = category; categoriaSelect.dispatchEvent(new Event('change')); }
               suggestionMade = true; break;
@@ -449,72 +476,6 @@
       reader.readAsDataURL(file);
     } else { imagePreview.src = ''; imagePreview.style.display = 'none'; }
   });
-
-  function generateAndDownloadPDF(data) {
-    const doc = new jsPDF();
-    const protocol = data.protocolo;
-    const date = new Date().toLocaleString('pt-BR');
-
-    // Cabeçalho
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Radar Cidadão", 105, 20, null, null, 'center');
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text("Comprovante de Registro de Ocorrência", 105, 30, null, null, 'center');
-
-    // Linha
-    doc.setLineWidth(0.5);
-    doc.line(20, 35, 190, 35);
-
-    // Corpo do PDF
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Protocolo:", 20, 50);
-    doc.setFont('helvetica', 'normal');
-    doc.text(protocol, 50, 50);
-
-    doc.setFont('helvetica', 'bold');
-    doc.text("Data do Registro:", 20, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.text(date, 60, 60);
-
-    doc.setFont('helvetica', 'bold');
-    doc.text("Nome do Cidadão:", 20, 70);
-    doc.setFont('helvetica', 'normal');
-    doc.text(data.nome || "Não informado", 65, 70);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.text("Endereço da Ocorrência:", 20, 80);
-    doc.setFont('helvetica', 'normal');
-    doc.text(doc.splitTextToSize(data.endereco || "Não informado", 150), 20, 88);
-    
-    let currentY = 110;
-    doc.setFont('helvetica', 'bold');
-    doc.text("Categoria:", 20, currentY);
-    doc.setFont('helvetica', 'normal');
-    let categoryText = data.categoria;
-    if(data.detalhe_ocorrencia) {
-      categoryText += ` (${data.detalhe_ocorrencia})`;
-    }
-    doc.text(categoryText, 50, currentY);
-    currentY += 10;
-
-    doc.setFont('helvetica', 'bold');
-    doc.text("Descrição:", 20, currentY);
-    currentY += 8;
-    doc.setFont('helvetica', 'normal');
-    doc.text(doc.splitTextToSize(data.descricao, 170), 20, currentY);
-
-    // Rodapé
-    doc.setLineWidth(0.5);
-    doc.line(20, 270, 190, 270);
-    doc.setFontSize(10);
-    doc.setTextColor(150);
-    doc.text("Obrigado por contribuir para uma cidade melhor. Este é um documento gerado automaticamente.", 105, 280, null, null, 'center');
-
-    doc.save(`Comprovante-Radar-Cidadao-${protocol}.pdf`);
-  }
   
   let lastSubmittedData = {};
   
@@ -523,16 +484,16 @@
     if (!validateStep(currentStep)) return;
     setLoading(true);
 
-    const protocol = `RC-${Date.now()}`; // Gera o protocolo aqui
+    const protocol = `RC-${Date.now()}`;
     
     const file = imageInput.files[0];
     let data = Object.fromEntries(new FormData(form));
-    data.protocolo = protocol; // Adiciona o protocolo aos dados
+    data.protocolo = protocol;
 
     const activeSubCategory = document.querySelector('.sub-category-wrapper[style*="block"]');
     if (activeSubCategory) { const subSelect = activeSubCategory.querySelector('select'); if (subSelect && subSelect.name) { data[subSelect.name] = subSelect.value; } }
     
-    lastSubmittedData = data; // Armazena os dados para gerar o PDF
+    lastSubmittedData = data;
 
     if (file) {
       const reader = new FileReader();
@@ -554,7 +515,7 @@
         postSubmissionInfo.innerHTML = specificMessage + generalMessage;
         
         cardFlipper.classList.add('is-flipped');
-        generateAndDownloadPDF(lastSubmittedData); // Gera e baixa o PDF
+        generateAndDownloadPDF(lastSubmittedData);
         
       } else { throw new Error(result.message || 'Ocorreu um erro desconhecido.'); }
     })
@@ -581,7 +542,7 @@
         showStep(currentStep);
         const motivationalQuotes = [ "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.", "Você sabia? Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.", "A sua participação é a ferramenta mais poderosa para o bem-estar da nossa comunidade." ];
         document.getElementById('motivational-quote').textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-    }, 400); // Aguardar a animação de virar
+    }, 400);
   });
 
   // --- LÓGICA DO ASSISTENTE VIRTUAL ---

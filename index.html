@@ -60,6 +60,12 @@
     .card-flipper { transition: transform 0.8s; transform-style: preserve-3d; }
     .card-flipper.is-flipped { transform: rotateY(180deg); }
 
+    .card-container {
+      position: relative;
+      /* A altura mínima é necessária para a animação de virar o cartão funcionar corretamente. */
+      min-height: 720px;
+    }
+
     .card {
       border: none; border-radius: 1rem;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
@@ -97,26 +103,22 @@
     .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.2); background-color: var(--card-background-color); }
     
     .btn-primary { background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end)); border: none; border-radius: 0.5rem; padding: 0.85rem; font-weight: 500; transition: all 0.2s ease-in-out; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 123, 255, 0.103); }
     
     .sub-category-wrapper { display: none; animation: slideUpFadeIn 0.4s; }
 
     /* --- Elementos Inteligentes --- */
     #motivational-quote { background-color: rgba(0, 123, 255, 0.05); border-left: 4px solid var(--primary-color); padding: 1rem; margin-bottom: 1.5rem; font-style: italic; color: var(--muted-text-color); opacity: 0; animation: fadeIn 0.5s 0.2s forwards; }
-    .category-wrapper { position: relative; }
     #ai-suggestion {
-        position: absolute;
-        top: 0;
-        right: 0;
-        transform: translateY(-90%);
         font-size: 0.8rem;
-        padding: 0.3rem 0.6rem;
-        background-color: #e7f3ff;
+        padding: 0.2rem 0.6rem;
+        background-color: rgba(231, 243, 255, 0.9);
+        border: 1px solid rgba(0, 123, 255, 0.075);
         border-radius: 1rem;
         display: none;
         animation: fadeIn 0.5s;
-        z-index: 10;
         white-space: nowrap;
+        color: #0056b3;
     }
     
     /* --- Mensagem de Sucesso --- */
@@ -124,13 +126,13 @@
     #post-submission-info { background-color: var(--input-background-color); border: 1px solid var(--border-color); font-size: 0.95rem; text-align: left; }
 
     /* --- Botão de Ajuda e Modal --- */
-    .help-fab { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 28px; font-weight: bold; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); cursor: pointer; z-index: 999; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; }
+    .help-fab { position: fixed; bottom: 20px; right: 05px; width: 30px; height: 30px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 23px; font-weight: bold; border: none; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); cursor: pointer; z-index: 999; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; }
     .help-fab:hover { transform: scale(1.1); }
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1001; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s; }
     .modal-overlay.visible { opacity: 1; visibility: visible; }
     .modal-content { background-color: var(--card-background-color); padding: 2rem; border-radius: 1rem; width: 90%; max-width: 500px; position: relative; transform: scale(0.9); transition: transform 0.3s ease; }
     .modal-overlay.visible .modal-content { transform: scale(1); }
-    .modal-close { position: absolute; top: 15px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
+    .modal-close { position: absolute; top: 50px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; color: #aaa; }
     .faq-item { margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
     .faq-item h5 { font-weight: bold; color: var(--primary-color); }
 
@@ -164,7 +166,7 @@
 
 <div id="main-content">
   <div class="container">
-    <div class="position-relative">
+    <div class="card-container">
       <div id="card-flipper" class="card-flipper">
         <!-- Frente do Cartão: Formulário -->
         <div class="card card-front">
@@ -215,10 +217,12 @@
                         <label for="descricao" class="form-label">Descreva o que aconteceu *</label>
                         <textarea id="descricao" name="descricao" rows="5" class="form-control" required maxlength="1000"></textarea>
                     </div>
-                    <div class="mb-3 category-wrapper">
-                        <label for="categoria" class="form-label">Categoria</label>
-                        <div id="ai-suggestion"></div>
-                        <select id="categoria" name="categoria" class="form-select"> <option value="">Selecione a categoria</option><option>Buraco na via</option> <option>Iluminação pública</option> <option>Vazamento de água</option> <option>Limpeza de terreno / Lixo</option> <option>Poluição sonora</option> <option>Poluição visual</option> <option>Segurança pública</option> <option>Saúde</option> <option>Outro</option> </select>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label for="categoria" class="form-label mb-0">Categoria</label>
+                            <div id="ai-suggestion"></div>
+                        </div>
+                        <select id="categoria" name="categoria" class="form-select mt-1"> <option value="">Selecione a categoria</option><option>Buraco na via</option> <option>Iluminação pública</option> <option>Vazamento de água</option> <option>Limpeza de terreno / Lixo</option> <option>Poluição sonora</option> <option>Poluição visual</option> <option>Segurança pública</option> <option>Saúde</option> <option>Outro</option> </select>
                     </div>
                     <div id="sub-categoria-iluminacao" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-iluminacao-select" class="form-label">Qual o problema de iluminação?</label> <select id="sub-categoria-iluminacao-select" class="form-select"> <option>Poste com lâmpada queimada</option><option>Poste danificado ou caído</option><option>Fios soltos ou em risco</option><option>Vários postes apagados na rua</option> </select> </div>
                     <div id="sub-categoria-agua" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-agua-select" class="form-label">Onde é o vazamento?</label> <select id="sub-categoria-agua-select" class="form-select"> <option>Na rua / asfalto</option><option>Na calçada</option><option>Em terreno baldio / área de grama</option> </select> </div>
@@ -231,7 +235,10 @@
                         <input class="form-control" type="file" id="imagem" name="imagem" accept="image/*">
                         <div class="text-center"> <img id="imagePreview" class="mt-3 rounded" src="" alt="Pré-visualização da imagem" style="display: none; max-width: 100%; max-height: 200px; border: 1px solid #ddd; padding: 4px;" /> </div>
                     </div>
-                    <div class="d-flex justify-content-between mt-4"> <button type="button" class="btn btn-secondary prev-btn">Voltar</button> <button type="submit" id="submitButton" class="btn btn-primary"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button> </div>
+                    <div class="d-grid gap-2 mt-4 pt-2">
+                        <button type="submit" id="submitButton" class="btn btn-primary btn-lg"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button>
+                        <button type="button" class="btn btn-outline-secondary prev-btn">Voltar</button>
+                    </div>
                   </div>
                 </form>
             </div>
@@ -298,10 +305,15 @@
     
     // Inicia o som quando a animação começa
     setTimeout(() => {
-        Tone.start();
-        radarSoundInterval = setInterval(() => {
-            synth.triggerAttackRelease("G5", "8n", Tone.now());
-        }, 1000);
+        // Envolve o início do áudio em uma interação do usuário para contornar políticas de autoplay
+        const startAudio = () => {
+            Tone.start();
+            radarSoundInterval = setInterval(() => {
+                synth.triggerAttackRelease("G5", "8n", Tone.now());
+            }, 1000);
+            document.body.removeEventListener('click', startAudio);
+        };
+        document.body.addEventListener('click', startAudio);
     }, 500);
 
 
@@ -549,6 +561,39 @@
   const helpFab = document.getElementById('help-fab');
   const helpModal = document.getElementById('help-modal');
   const modalCloseBtn = document.getElementById('modal-close-btn');
+  const helpModalContent = helpModal.querySelector('.modal-content');
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+  let touchStartY = 0;
+  let touchEndY = 0;
+
+  function handleSwipe() {
+    const swipeThresholdX = 100; // Mínima distância horizontal para considerar um swipe
+    const swipeThresholdY = 50;  // Máxima distância vertical permitida
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    if (Math.abs(deltaY) > swipeThresholdY) {
+        return; // É mais um scroll vertical
+    }
+    if (Math.abs(deltaX) > swipeThresholdX) {
+        closeHelpModal();
+    }
+  }
+  
+  helpModalContent.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  helpModalContent.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
+    handleSwipe();
+  });
+
 
   function openHelpModal() { helpModal.classList.add('visible'); }
   function closeHelpModal() { helpModal.classList.remove('visible'); }

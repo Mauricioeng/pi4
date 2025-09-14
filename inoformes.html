@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mural de Informes | Melhorado</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+    /* --- CONFIGURAÇÕES GLOBAIS E PALETA DE CORES --- */
+    :root {
+      --primary-color: #0093E9;
+      --gradient-start: #0093E9;
+      --gradient-end: #80D0C7;
+      --background-color: #121212;
+      --text-color: #f0f4f8;
+      --muted-text-color: #aeb8c2;
+      --card-background-color-rgba: rgba(255, 255, 255, 0.1);
+      --border-color-rgba: rgba(255, 255, 255, 0.2);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0; padding: 0;
+        height: 100%;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-color);
+        overflow: hidden;
+    }
+    
+    /* --- ESTRUTURA PRINCIPAL DO FEED --- */
+    .informe-feed {
+        height: 100vh;
+        width: 100vw;
+        overflow-y: scroll;
+        scroll-snap-type: y mandatory;
+    }
+    .informe-item {
+        height: 100vh;
+        width: 100%;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        scroll-snap-align: start;
+    }
+    .informe-background {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        object-fit: cover;
+        z-index: 1;
+        filter: brightness(0.7);
+    }
+    .informe-item::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0;
+        width: 100%; height: 50%;
+        background: linear-gradient(to top, rgba(18,18,18,0.9), transparent);
+        z-index: 2;
+    }
+
+    /* --- CONTEÚDO DO INFORME --- */
+    .informe-content {
+        position: relative;
+        z-index: 3;
+        padding: 20px 25px;
+        width: 100%;
+        max-width: 600px;
+        margin-bottom: 60px;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: transform 0.8s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.8s;
+    }
+    .informe-item.active .informe-content {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .informe-content .date { 
+        font-size: 0.8rem; 
+        font-weight: 700; 
+        padding: 6px 12px; 
+        border-radius: 20px; 
+        display: inline-block;
+        margin-bottom: 15px;
+        letter-spacing: 0.5px;
+        /* Efeito de Vidro */
+        background: var(--card-background-color-rgba);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid var(--border-color-rgba);
+    }
+    .informe-content h2 { 
+        margin:0 0 10px 0; 
+        font-size: 2.2rem; 
+        font-weight: 700;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.7);
+        line-height: 1.2;
+    }
+    .informe-content .description { 
+        margin:0 0 25px 0; 
+        font-size: 1rem; 
+        line-height: 1.6; 
+        color: var(--muted-text-color);
+        text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+    }
+
+    /* Botão CTA com estilo do Radar Cidadão */
+    .cta-button { 
+        display: inline-block; 
+        padding: 12px 25px; 
+        text-decoration: none; 
+        font-weight: 500;
+        color: #fff;
+        background-image: linear-gradient(45deg, var(--gradient-start) 0%, var(--gradient-end) 100%); 
+        border: none; 
+        border-radius: 0.75rem;
+        transition: all 0.2s ease-in-out; 
+        box-shadow: 0 4px 15px rgba(0, 147, 233, 0.15);
+    }
+    .cta-button:hover { 
+        transform: translateY(-3px); 
+        box-shadow: 0 7px 20px rgba(0, 147, 233, 0.25);
+    }
+    
+    /* --- MENU FLUTUANTE (ESTILO DO RADAR CIDADÃO) --- */
+    #menuToggle {
+        position: fixed; top: 20px; left: 20px; z-index: 30;
+        width: 50px; height: 50px;
+        background: rgba(28, 28, 28, 0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border:1px solid rgba(255,255,255,0.2);
+        border-radius:50%;
+        cursor:pointer; display:flex; justify-content:center; align-items:center; transition: all 0.3s ease-in-out;
+        box-shadow:0 4px 10px rgba(0,0,0,0.2);
+    }
+    #menuToggle:hover { background: rgba(40,40,40,0.7); transform:scale(1.05); }
+    .menu-icon {
+        width: 28px; height: 28px;
+        stroke: white; stroke-width: 2.5; stroke-linecap: round;
+        transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1);
+    }
+    #menuToggle.active .menu-icon { transform: rotate(45deg); }
+    .side-menu {
+        position: fixed; top: 85px; left: 20px;
+        display: flex; flex-direction: column; gap: 10px;
+        background: rgba(28,28,28,0.5);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        padding: 10px; border-radius: 20px;
+        z-index: 15;
+        border:1px solid rgba(255,255,255,0.2);
+        opacity: 0; transform: translateY(-20px) scale(0.95);
+        pointer-events: none; 
+        transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.3s;
+    }
+    .side-menu.show { transform: translateY(0) scale(1); opacity:1; pointer-events: auto; }
+    .side-menu ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .side-menu a { 
+        color: var(--text-color); text-decoration: none; 
+        display:flex; justify-content:center; align-items:center; 
+        position:relative; width: 50px; height: 50px;
+        border-radius: 50%; transition: background-color 0.2s;
+    }
+    .side-menu a:hover { background-color: rgba(255,255,255,0.1); }
+    .side-menu svg { width:24px; height:24px; stroke: var(--text-color); }
+    .side-menu .tooltip {
+        position:absolute; left:115%;
+        background-color: var(--primary-color); color:white;
+        padding:5px 12px; border-radius:6px; font-size:0.9rem; font-weight:500;
+        white-space:nowrap; opacity:0; visibility:hidden; transform:translateX(-10px);
+        transition: all 0.3s ease; pointer-events: none;
+    }
+    .side-menu a:hover .tooltip { opacity:1; visibility:visible; transform:translateX(0); }
+</style>
+</head>
+<body>
+
+<button id="menuToggle">
+    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+    </svg>
+</button>
+<nav class="side-menu" id="sideMenu">
+    <ul>
+        <li><a href="dashboard.html" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
+        <li><a href="iot.html" title="Visão IOT"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg><span class="tooltip">Visão IOT</span></a></li>
+        <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z"/>
+    <path d="M12 11h7"/>
+    <path d="M12 12a1 1 0 1 0 0-2a1 1 0 0 0 0 2z"/>
+    <path d="M16 16l-3-3"/>
+</svg><span class="tooltip">Radar Cidadão</span></a></li>
+    </ul>
+</nav>
+
+<main class="informe-feed">
+    <section class="informe-item">
+        <img class="informe-background" src="https://imgs.search.brave.com/xtIrkAUVkkcK2aJf3R3reDZyCzzNkEoehMvwbxfJP8s/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/ZnJlZXBpay5jb20v/Zm90b3MtcHJlbWl1/bS9yZXRyYXRvLWRl/LW11bGhlci1uZWdy/YS1lLWdlc3NvLWNv/Ymljb3NvLWVtLWVz/dHVkaW8tcGFyYS1z/ZWd1cmFuY2EtZGUt/dmFjaW5hcy1vdS1i/ZW0tZXN0YXItcG9y/LWZ1bmRvLWF6dWwt/bW9kYS1kZS1nYXJv/dGEtZmVsaXotZ2Vu/LXotZS1hcG9udGFu/ZG8tcGFyYS1tZWRp/Y2luYS1kZS1zYXVk/ZS1vdS1lc2NvbGhh/LWRlLWVzdGlsby1k/ZS12aWRhLXBhcmEt/cGFyYXItby12aXJ1/c181OTA0NjQtMTI4/NTc2LmpwZz9zZW10/PWFpc19pbmNvbWlu/ZyZ3PTc0MCZxPTgw" alt="Plano de fundo do informe">
+        <div class="informe-content">
+            <p class="date">15 DE SETEMBRO DE 2025</p>
+            <h2>Vacinação em dia contra gripe e Covid-19 diminui em até 40% o risco de infarto e AVC</h2>
+            <p class="description">A vacinação ocorre em todas as Unidades Básicas de Saúde (UBS) do município. Leve sua carteirinha e um documento com foto.</p>
+            <a href="https://caieiras.sp.gov.br/?id=contato" class="cta-button">Ver Postos de Saúde</a>
+        </div>
+    </section>
+    <section class="informe-item">
+        <img class="informe-background" src="https://videos.openai.com/vg-assets/assets%2Ftask_01k54b16mge97vyb70cc0tvebh%2F1757861287_img_0.webp?st=2025-09-14T13%3A25%3A56Z&se=2025-09-20T14%3A25%3A56Z&sks=b&skt=2025-09-14T13%3A25%3A56Z&ske=2025-09-20T14%3A25%3A56Z&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skoid=cfbc986b-d2bc-4088-8b71-4f962129715b&skv=2019-02-02&sv=2018-11-09&sr=b&sp=r&spr=https%2Chttp&sig=aMmD633i1klJG17o1I4p4tQJvY%2BQ4wrQKR11wk3kVeU%3D&az=oaivgprodscus" alt="Plano de fundo do informe">
+        <div class="informe-content">
+            <p class="date">11 DE SETEMBRO DE 2025</p>
+            <h2>Um alerta emitido pelo Tribunal de Contas do Estado de São Paulo (TCESP)</h2>
+            <p class="description">Prefeito Lagoinha precisa aplicar anualmente, pelo menos 25% de
+sua receita, na manutenção e desenvolvimento do ensino de Caieiras.</p>
+            <a href="https://www.portaldoispontos.com.br/noticia/prefeitura-de-caieiras-entra-em-lista-de-alerta-do-tribunal-de-contas-por-desequilibrio-nas-contas-publicas" class="cta-button">Confira o documento na íntegra</a>
+        </div>
+    </section>
+    <section class="informe-item">
+        <img class="informe-background" src="https://picsum.photos/id/237/800/1200" alt="Plano de fundo do informe">
+        <div class="informe-content">
+            <p class="date">12 DE SETEMBRO DE 2025</p>
+            <h2>Prefeitura de São José incentiva adoção responsável de cães e gatos</h2>
+            <p class="description">Cidade tem sob sua responsabilidade 215 cães e 84 gatos, totalizando 299 animais que aguardam um novo lar</p>
+            <a href="https://ndmais.com.br/animais/prefeitura-de-sao-jose-incentiva-adocao-responsavel-de-caes-e-gatos/ " class="cta-button">Confira o documento na íntegra</a>
+        </div>
+    </section>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const informes = document.querySelectorAll('.informe-item');
+    const feed = document.querySelector('.informe-feed');
+    const menuToggle = document.getElementById('menuToggle');
+    const sideMenu = document.getElementById('sideMenu');
+    let menuTimeout; // Variável para controlar o temporizador
+
+    // Animação dos informes ao rolar a página
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            entry.target.classList.toggle('active', entry.isIntersecting);
+        });
+    }, { root: feed, threshold: 0.5 });
+    informes.forEach(informe => observer.observe(informe));
+
+    // Lógica do menu
+    menuToggle.addEventListener('click', () => {
+        clearTimeout(menuTimeout);
+        sideMenu.classList.add('show');
+        menuToggle.classList.add('active');
+        menuTimeout = setTimeout(() => {
+            sideMenu.classList.remove('show');
+            menuToggle.classList.remove('active');
+        }, 3000);
+    });
+});
+</script>
+
+</body>
+</html>

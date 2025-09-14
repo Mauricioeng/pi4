@@ -3,86 +3,126 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Radar Cidadão</title>
+  <title>Radar Cidadão | Melhorado</title>
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
+    /* --- CONFIGURAÇÕES GLOBAIS E PALETA DE CORES --- */
     :root {
-      --primary-color: #007BFF;
-      --gradient-start: #2d09ce;
-      --gradient-end: hwb(244 11% 17%);
-      --background-color: #f7f9fc;
+      --primary-color: #0093E9;
+      --gradient-start: #0093E9;
+      --gradient-end: #80D0C7;
+      --background-color: #f0f4f8;
       --card-background-color: #ffffff;
-      --text-color: #212529;
-      --muted-text-color: #6c757d;
-      --input-background-color: #f8f9fa;
-      --progress-background: #e9ecef;
-      --border-color: #dee2e6;
-      --success-color: #198754;
+      --text-color: #2c3e50;
+      --muted-text-color: #7f8c8d;
+      --input-background-color: #f7f9fc;
+      --progress-background: #e0e7ee;
+      --border-color: #dce4ec;
+      --success-color: #27ae60;
+      --danger-color: #e74c3c;
     }
+
+    /* --- ESTILO BASE DO CORPO --- */
     body {
       background-color: var(--background-color);
-      padding-top: 2rem;
-      padding-bottom: 2rem;
+      padding: 2rem 1rem;
       font-family: 'Inter', sans-serif;
       overflow-x: hidden;
-      overflow-y: auto;
     }
+
+    /* --- TELA DE ABERTURA (SPLASH SCREEN) --- */
     #splash-screen {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background-color: var(--background-color);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 1000;
-      transition: opacity 0.8s ease-out, visibility 0.8s;
+      transition: opacity 0.6s ease-out, visibility 0.6s;
     }
     #splash-screen.hidden { opacity: 0; visibility: hidden; }
-    .splash-scene { width: 250px; height: auto; }
-    .splash-scene .draw-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 2s ease-out forwards; }
-    .splash-scene .fill-shape { opacity: 0; animation: fill-in 1s ease-in forwards; }
-    .splash-title { font-size: 2.2rem; font-weight: 700; color: var(--text-color); margin-top: 1rem; opacity: 0; animation: fadeIn 1s ease-in forwards; animation-delay: 2.5s; }
-    .splash-subtitle { font-size: 1.1rem; color: var(--muted-text-color); margin-top: 0.5rem; opacity: 0; height: 2em; animation: fadeIn 1s ease-in forwards; animation-delay: 3s; }
-    #main-content { opacity: 0; transition: opacity 0.8s ease-in; }
+    .splash-scene { width: 220px; height: auto; }
+    .splash-scene .draw-path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: draw 1.5s ease-out forwards 0.2s; }
+    .splash-scene .fill-shape { opacity: 0; animation: fill-in 0.8s ease-in forwards; }
+    .splash-title { font-size: 2.2rem; font-weight: 700; color: var(--text-color); margin-top: 1rem; opacity: 0; animation: fadeIn 0.8s ease-in forwards; animation-delay: 1.8s; }
+    .splash-subtitle { font-size: 1.1rem; color: var(--muted-text-color); margin-top: 0.5rem; opacity: 0; height: 2em; animation: fadeIn 0.8s ease-in forwards; animation-delay: 2.2s; }
+
+    /* --- CONTEÚDO PRINCIPAL E ANIMAÇÃO DE ENTRADA --- */
+    #main-content { 
+      opacity: 0; 
+      transition: opacity 0.6s ease-in; 
+    }
     #main-content.visible { opacity: 1; }
-    .container { max-width: 600px; perspective: 1000px; }
+    
+    /* --- ESTRUTURA DO CARD E EFEITO DE VIRAR --- */
+    .container { max-width: 600px; perspective: 1200px; }
+    .card-container { position: relative; min-height: 700px; }
     .card-flipper { transition: transform 0.8s; transform-style: preserve-3d; }
     .card-flipper.is-flipped { transform: rotateY(180deg); }
-    .card-container {
-      position: relative;
-      min-height: 720px;
-    }
     .card {
-      border: none; border-radius: 1rem;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      border: none; border-radius: 1.25rem;
+      box-shadow: 0 10px 40px rgba(44, 62, 80, 0.1);
       background-color: var(--card-background-color);
       position: absolute; width: 100%;
       backface-visibility: hidden;
+      overflow: hidden; /* Garante que elementos filhos respeitem o border-radius */
     }
     .card-back { transform: rotateY(180deg); }
+
+    /* --- CABEÇALHO DO FORMULÁRIO --- */
     .card-title { font-size: 2rem; font-weight: 700; color: var(--text-color); }
-    .greeting { color: var(--muted-text-color); font-size: 1.1rem; height: auto; min-height: 1.5em; }
+    .greeting { color: var(--muted-text-color); font-size: 1.1rem; min-height: 1.5em; }
     .radar-logo-container { height: 60px; margin-bottom: 1rem; }
     .radar-logo { width: 60px; height: 60px; }
     .radar-sweep { transform-origin: center; animation: radar-sweep 3s linear infinite; }
+
+    /* --- BARRA DE PROGRESSO --- */
     .progress-container { margin-bottom: 2rem; }
-    .progress { height: 10px; border-radius: 5px; background-color: var(--progress-background); overflow: visible; }
-    .progress-bar { background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end)); transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1); position: relative; }
+    .progress { height: 8px; border-radius: 4px; background-color: var(--progress-background); overflow: hidden; }
+    .progress-bar { background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end)); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
     .progress-bar-label { color: var(--muted-text-color); font-size: 0.85rem; font-weight: 500; text-align: center; margin-top: 0.5rem; }
+
+    /* --- ESTILOS DO FORMULÁRIO E INPUTS --- */
     .form-step { display: none; }
-    .form-step.active { display: block; animation: slideUpFadeIn 0.5s forwards; }
-    .is-invalid-shake { animation: shake 0.5s; border-color: #dc3545 !important; }
+    .form-step.active { display: block; animation: slideUpFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .is-invalid-shake { animation: shake 0.5s; border-color: var(--danger-color) !important; }
     .form-control, .form-select {
-      font-size: 1rem; border-radius: 0.5rem; padding: 0.75rem 1rem;
+      font-size: 1rem; border-radius: 0.75rem; padding: 0.85rem 1rem;
       background-color: var(--input-background-color); border: 1px solid var(--border-color); color: var(--text-color);
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.2); background-color: var(--card-background-color); }
-    .btn-primary { background: linear-gradient(45deg, var(--gradient-start), var(--gradient-end)); border: none; border-radius: 0.5rem; padding: 0.85rem; font-weight: 500; transition: all 0.2s ease-in-out; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 123, 255, 0.103); }
+    .form-control:focus, .form-select:focus { 
+      border-color: var(--primary-color); 
+      box-shadow: 0 0 0 0.25rem rgba(0, 147, 233, 0.2); 
+      background-color: var(--card-background-color); 
+    }
+
+    /* --- BOTÕES --- */
+    .btn-primary { 
+      background-image: linear-gradient(45deg, var(--gradient-start) 0%, var(--gradient-end) 100%); 
+      border: none; border-radius: 0.75rem; padding: 0.85rem 1.5rem; 
+      font-weight: 500; transition: all 0.2s ease-in-out; 
+      box-shadow: 0 4px 15px rgba(0, 147, 233, 0.15);
+    }
+    .btn-primary:hover { 
+      transform: translateY(-3px); 
+      box-shadow: 0 7px 20px rgba(0, 147, 233, 0.25);
+    }
+    .btn-sm { padding: 0.25rem 0.6rem; font-size: 0.8rem; }
+
+    /* --- ELEMENTOS ESPECÍFICOS DO FORMULÁRIO --- */
     .sub-category-wrapper { display: none; animation: slideUpFadeIn 0.4s; }
-    #motivational-quote { background-color: rgba(0, 123, 255, 0.05); border-left: 4px solid var(--primary-color); padding: 1rem; margin-bottom: 1.5rem; font-style: italic; color: var(--muted-text-color); opacity: 0; animation: fadeIn 0.5s 0.2s forwards; }
+    #motivational-quote { 
+      background-color: rgba(0, 147, 233, 0.05); 
+      border-left: 4px solid var(--primary-color); 
+      padding: 1rem; margin-bottom: 1.5rem; font-style: italic; color: var(--muted-text-color); 
+      border-radius: 0 8px 8px 0;
+      opacity: 0; animation: fadeIn 0.5s 0.2s forwards; 
+    }
     #ai-suggestion {
         font-size: 0.8rem; padding: 0.2rem 0.6rem;
         background-color: rgba(231, 243, 255, 0.9);
@@ -90,505 +130,487 @@
         border-radius: 1rem; display: none; animation: fadeIn 0.5s;
         white-space: nowrap; color: #0056b3;
     }
-    #success-message h4 { font-size: 1.5rem; color: var(--success-color); }
-    #post-submission-info { background-color: var(--input-background-color); border: 1px solid var(--border-color); font-size: 0.95rem; text-align: left; }
+    
+    /* --- ESTILOS DA TELA DE SUCESSO --- */
+    #success-message .icon-success { font-size: 4rem; color: var(--success-color); margin-bottom: 1rem; }
+    #success-message h4 { font-size: 1.75rem; color: var(--text-color); font-weight: 700; }
+    #post-submission-info { 
+      background-color: var(--input-background-color); 
+      border: 1px solid var(--border-color); 
+      font-size: 0.95rem; text-align: left; 
+    }
+
+    /* --- ANIMAÇÕES --- */
     @keyframes radar-sweep { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @keyframes draw { to { stroke-dashoffset: 0; } }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fill-in { to { opacity: 1; } }
-    @keyframes slideUpFadeIn { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fill-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUpFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-    /* --- ESTILOS DO MENU DOCK MINIMALISTA --- */
-.dock-menu {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 998;
-}
 
-.dock-menu ul {
-    list-style: none;
-    margin: 0;
-    padding: 8px;
-    display: flex;
-    gap: 10px;
-    
-    /* Efeito de vidro */
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dock-menu li {
-    padding: 0;
-}
-
-.dock-menu a {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 50px;
-    height: 50px;
-    color: var(--text-color);
-    text-decoration: none;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 15px;
-    transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-}
-
-/* Efeito de hover: ícone sobe e aumenta */
-.dock-menu a:hover {
-    transform: translateY(-10px) scale(1.1);
-    background-color: #fff;
-}
-
-/* Ícone ativo (página atual) */
-.dock-menu a.active {
-    transform: translateY(-12px) scale(1.2);
-    background-color: #fff;
-    color: var(--primary-color);
-}
-
-/* Tooltip com o nome do ícone */
-.dock-menu a span {
-    position: absolute;
-    bottom: 125%; /* Aparece acima do ícone */
-    background-color: #343a40;
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    white-space: nowrap;
-    
-    /* Escondido por padrão */
-    opacity: 0;
-    transform: translateY(5px);
-    pointer-events: none;
-    transition: all 0.3s ease;
-}
-
-/* Mostra o tooltip no hover */
-.dock-menu a:hover span {
-    opacity: 1;
-    transform: translateY(0);
-}
+    /* --- MENU FLUTUANTE --- */
+    #menuToggle {
+        position: fixed; top: 20px; left: 20px; z-index: 1001;
+        width: 50px; height: 50px;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.7);
+        border-radius: 50%;
+        cursor: pointer; display: flex; justify-content: center; align-items: center; 
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    #menuToggle:hover { background: rgba(255,255,255,0.8); transform: scale(1.05); }
+    .menu-icon {
+        width: 26px; height: 26px;
+        stroke: var(--text-color); stroke-width: 2.5; stroke-linecap: round;
+        transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1);
+    }
+    #menuToggle.active .menu-icon { transform: rotate(45deg); }
+    .side-menu {
+        position: fixed; top: 85px; left: 20px; z-index: 1000;
+        display: flex; flex-direction: column; gap: 10px;
+        background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        padding: 10px; border-radius: 20px;
+        opacity: 0; transform: translateY(-20px) scale(0.95);
+        pointer-events: none; 
+        transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.3s;
+        border: 1px solid rgba(255,255,255,0.7);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .side-menu.show { transform: translateY(0) scale(1); opacity:1; pointer-events: auto; }
+    .side-menu ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .side-menu a { 
+        color: var(--text-color); text-decoration: none; 
+        display: flex; justify-content: center; align-items: center; 
+        position: relative; width: 50px; height: 50px;
+        border-radius: 50%; transition: background-color 0.2s;
+    }
+    .side-menu a:hover { background-color: rgba(0, 147, 233, 0.1); }
+    .side-menu svg { width:24px; height:24px; }
+    .side-menu .tooltip {
+        position: absolute; left: 115%;
+        background-color: var(--text-color); color: white;
+        padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+        white-space: nowrap; opacity: 0; visibility: hidden; transform: translateX(-10px);
+        transition: all 0.3s ease; pointer-events: none;
+    }
+    .side-menu a:hover .tooltip { opacity:1; visibility:visible; transform:translateX(0); }
   </style>
-  <nav class="dock-menu">
-    <ul>
-        <li>
-            <a href="dashboard.html" title="Dashboard">
-                <svg xmlns="http://www.w3.org/2000/svg" width="21" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg>
-                <span>Dashboard</span>
-            </a>
-        </li>
-        <li>
-   <a href="informes.html" class="active" title="Visão IOT">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-        <rect x="9" y="9" width="6" height="6"></rect>
-        <line x1="9" y1="1" x2="9" y2="4"></line>
-        <line x1="15" y1="1" x2="15" y2="4"></line>
-        <line x1="9" y1="20" x2="9" y2="23"></line>
-        <line x1="15" y1="20" x2="15" y2="23"></line>
-        <line x1="20" y1="9" x2="23" y2="9"></line>
-        <line x1="20" y1="14" x2="23" y2="14"></line>
-        <line x1="1" y1="9" x2="4" y2="9"></line>
-        <line x1="1" y1="14" x2="4" y2="14"></line>
-    </svg>
-    <span>Visão IOT</span>
-</a>
-        </li>
-        <li>
-            <a href="informes.html" title="Informes">
-                <svg xmlns="http://www.w3.org/2000/svg" width="21" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M12 4v10"/><path d="M12 4a2 2 0 1 0-4 0v10a2 2 0 1 0 4 0Z"/><path d="M12 4a2 2 0 1 1 4 0v10a2 2 0 1 1-4 0Z"/></svg>
-                <span>Informes</span>
-            </a>
-        </li>
-    </ul>
-</nav>  
 </head>
 <body>
 
-<div id="splash-screen">
-  <svg class="splash-scene" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
-    <style> #building1 { animation-delay: 0.5s; } #building2 { animation-delay: 0.8s; } #building3 { animation-delay: 1.1s; } #tree1-trunk { animation-delay: 1.5s; } #tree1-leaves { animation-delay: 2s; } #tree2-trunk { animation-delay: 1.7s; } #tree2-leaves { animation-delay: 2.2s; } #sun { animation-delay: 2.5s; } </style>
-    <circle id="sun" class="fill-shape" cx="180" cy="20" r="10" fill="#FFD700"/>
-    <path id="building1" class="draw-path" d="M 40 90 V 40 H 70 V 90" stroke="#6c757d" stroke-width="1" fill="rgba(200,200,200,0.5)" />
-    <path id="building2" class="draw-path" d="M 80 90 V 20 H 120 V 90" stroke="#6c757d" stroke-width="1" fill="rgba(180,180,180,0.5)" />
-    <path id="building3" class="draw-path" d="M 130 90 V 50 H 155 V 90" stroke="#6c757d" stroke-width="1" fill="rgba(220,220,220,0.5)" />
-    <path id="tree1-trunk" class="draw-path" d="M 20 90 V 70" stroke="#8B4513" stroke-width="1.5" />
-    <circle id="tree1-leaves" class="fill-shape" cx="20" cy="60" r="12" fill="#228B22" />
-    <path id="tree2-trunk" class="draw-path" d="M 170 90 V 75" stroke="#8B4513" stroke-width="1.5" />
-    <circle id="tree2-leaves" class="fill-shape" cx="170" cy="65" r="10" fill="#2E8B57" />
-    <path id="ground" class="draw-path" d="M0 90 H200" stroke="#6c757d" stroke-width="2" />
-  </svg>
-  <h1 class="splash-title">Radar Cidadão</h1>
-  <p class="splash-subtitle" id="splash-subtitle"></p>
-</div>
+  <button id="menuToggle">
+      <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+      </svg>
+  </button>
+  <nav class="side-menu" id="sideMenu">
+      <ul>
+          <li><a href="#" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
+          <li><a href="#" title="Visão IOT"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg><span class="tooltip">IOT</span></a></li>
+          <li><a href="#" title="Informes"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M12 4v10"/><path d="M12 4a2 2 0 1 0-4 0v10a2 2 0 1 0 4 0Z"/><path d="M12 4a2 2 0 1 1 4 0v10a2 2 0 1 1-4 0Z"/></svg><span class="tooltip">Informes</span></a></li>
+      </ul>
+  </nav>
 
+  <div id="splash-screen">
+    <svg class="splash-scene" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
+      <style> #building1 { animation-delay: 0.2s; } #building2 { animation-delay: 0.4s; } #building3 { animation-delay: 0.6s; } #tree1-trunk { animation-delay: 0.8s; } #tree1-leaves { animation-delay: 1.1s; } #tree2-trunk { animation-delay: 0.9s; } #tree2-leaves { animation-delay: 1.2s; } #sun { animation-delay: 1.4s; } </style>
+      <circle id="sun" class="fill-shape" cx="180" cy="20" r="10" fill="#FFD700"/>
+      <path id="building1" class="draw-path" d="M 40 90 V 40 H 70 V 90" stroke="#7f8c8d" stroke-width="1" fill="rgba(200,200,200,0.5)" />
+      <path id="building2" class="draw-path" d="M 80 90 V 20 H 120 V 90" stroke="#7f8c8d" stroke-width="1" fill="rgba(180,180,180,0.5)" />
+      <path id="building3" class="draw-path" d="M 130 90 V 50 H 155 V 90" stroke="#7f8c8d" stroke-width="1" fill="rgba(220,220,220,0.5)" />
+      <path id="tree1-trunk" class="draw-path" d="M 20 90 V 70" stroke="#8B4513" stroke-width="1.5" />
+      <circle id="tree1-leaves" class="fill-shape" cx="20" cy="60" r="12" fill="#27ae60" />
+      <path id="tree2-trunk" class="draw-path" d="M 170 90 V 75" stroke="#8B4513" stroke-width="1.5" />
+      <circle id="tree2-leaves" class="fill-shape" cx="170" cy="65" r="10" fill="#2ecc71" />
+      <path id="ground" class="draw-path" d="M0 90 H200" stroke="#7f8c8d" stroke-width="2" />
+    </svg>
+    <h1 class="splash-title">Radar Cidadão</h1>
+    <p class="splash-subtitle" id="splash-subtitle"></p>
+  </div>
 
-<div id="main-content">
-  <div class="container">
-    <div class="card-container">
-      <div id="card-flipper" class="card-flipper">
-        <div class="card card-front">
-          <div class="card-body p-4 p-md-5">
-            <div id="form-container">
-                <div class="text-center mb-4">
-                    <div class="radar-logo-container">
-                        <svg class="radar-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="50" cy="50" r="45" stroke="#007BFF" stroke-width="1" fill="none" opacity="0.3"/>
-                            <circle cx="50" cy="50" r="30" stroke="#007BFF" stroke-width="1" fill="none" opacity="0.3"/>
-                            <circle cx="50" cy="50" r="15" stroke="#007BFF" stroke-width="1" fill="none" opacity="0.3"/>
-                            <line x1="50" y1="50" x2="50" y2="5" stroke="#007BFF" stroke-width="2" class="radar-sweep"/>
-                        </svg>
-                    </div>
-                    <h3 class="card-title">Radar Cidadão</h3>
-                    <p id="greeting" class="greeting"></p>
-                </div>
-
-                <div class="progress-container">
-                    <div class="progress">
-                        <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 33.33%;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                    <div id="progress-bar-label" class="progress-bar-label">Etapa 1 de 3</div>
-                </div>
-
-                <form id="radarForm" novalidate>
-                  <div class="form-step active" data-step="1">
-                    <h5 class="mb-3">1. Identificação</h5>
-                    <div class="mb-3"> <label for="nome" class="form-label">Nome Completo (Opcional)</label> <input id="nome" name="nome" type="text" class="form-control"> </div>
-                    <div class="mb-3"> <label for="email" class="form-label">E-mail</label> <input id="email" name="email" type="email" class="form-control" placeholder="seunome@email.com"> </div>
-                    <div class="mb-3"> <label for="telefone" class="form-label">Telefone / WhatsApp</label> <input id="telefone" name="telefone" type="tel" class="form-control" placeholder="(11) 99999-9999" maxlength="15"> </div>
-                    <div class="d-flex justify-content-end mt-4"> <button type="button" class="btn btn-primary next-btn">Avançar</button> </div>
+  <div id="main-content">
+    <div class="container">
+      <div class="card-container">
+        <div id="card-flipper" class="card-flipper">
+          
+          <div class="card card-front">
+            <div class="card-body p-4 p-md-5">
+              <div id="form-container">
+                  <div class="text-center mb-4">
+                      <div class="radar-logo-container">
+                          <svg class="radar-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="50" cy="50" r="45" stroke="var(--primary-color)" stroke-width="1" fill="none" opacity="0.3"/>
+                              <circle cx="50" cy="50" r="30" stroke="var(--primary-color)" stroke-width="1" fill="none" opacity="0.3"/>
+                              <circle cx="50" cy="50" r="15" stroke="var(--primary-color)" stroke-width="1" fill="none" opacity="0.3"/>
+                              <line x1="50" y1="50" x2="50" y2="5" stroke="var(--primary-color)" stroke-width="2" class="radar-sweep"/>
+                          </svg>
+                      </div>
+                      <h3 class="card-title">Radar Cidadão</h3>
+                      <p id="greeting" class="greeting"></p>
                   </div>
-                  <div class="form-step" data-step="2">
-                    <h5 class="mb-3">2. Ocorrência</h5>
-                    <div id="motivational-quote"></div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="endereco" class="form-label mb-0">Endereço da Ocorrência</label>
-                            <button type="button" id="getLocationBtn" class="btn btn-outline-primary btn-sm"> 
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin-map" viewBox="0 0 16 16"> <path fill-rule="evenodd" d="M3.1 11.2a.5.5 0 0 1 .4-.2H6a.5.5 0 0 1 0 1H3.75L1.5 15h13l-2.25-3H10a.5.5 0 0 1 0-1h2.5a.5.5 0 0 1 .4.2l3 4a.5.5 0 0 1-.4.8H.5a.5.5 0 0 1-.4-.8l3-4z"/> <path fill-rule="evenodd" d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999z"/> </svg>
-                              <span>Usar Localização</span> 
-                            </button>
-                        </div>
-                        <input id="endereco" name="endereco" type="text" class="form-control" placeholder="Rua, Número, Bairro...">
-                    </div>
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Descreva o que aconteceu *</label>
-                        <textarea id="descricao" name="descricao" rows="5" class="form-control" required maxlength="1000"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <label for="categoria" class="form-label mb-0">Categoria</label>
-                            <div id="ai-suggestion"></div>
-                        </div>
-                        <select id="categoria" name="categoria" class="form-select mt-1"> <option value="">Selecione a categoria</option><option>Buraco na via</option> <option>Iluminação pública</option> <option>Vazamento de água</option> <option>Limpeza de terreno / Lixo</option> <option>Poluição sonora</option> <option>Poluição visual</option> <option>Segurança pública</option> <option>Saúde</option> <option>Outro</option> </select>
-                    </div>
-                    <div id="sub-categoria-iluminacao" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-iluminacao-select" class="form-label">Qual o problema de iluminação?</label> <select id="sub-categoria-iluminacao-select" class="form-select"> <option>Poste com lâmpada queimada</option><option>Poste danificado ou caído</option><option>Fios soltos ou em risco</option><option>Vários postes apagados na rua</option> </select> </div>
-                    <div id="sub-categoria-agua" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-agua-select" class="form-label">Onde é o vazamento?</label> <select id="sub-categoria-agua-select" class="form-select"> <option>Na rua / asfalto</option><option>Na calçada</option><option>Em terreno baldio / área de grama</option> </select> </div>
-                    <div class="d-flex justify-content-between mt-4"> <button type="button" class="btn btn-secondary prev-btn">Voltar</button> <button type="button" class="btn btn-primary next-btn">Avançar</button> </div>
+                  <div class="progress-container">
+                      <div class="progress"><div id="progress-bar" class="progress-bar" role="progressbar"></div></div>
+                      <div id="progress-bar-label" class="progress-bar-label"></div>
                   </div>
-                  <div class="form-step" data-step="3">
-                    <h5 class="mb-3">3. Evidência</h5>
-                    <div class="mb-3">
-                        <label for="imagem" class="form-label">Anexar uma Foto (Opcional)</label>
-                        <input class="form-control" type="file" id="imagem" name="imagem" accept="image/*">
-                        <div class="text-center"> <img id="imagePreview" class="mt-3 rounded" src="" alt="Pré-visualização da imagem" style="display: none; max-width: 100%; max-height: 200px; border: 1px solid #ddd; padding: 4px;" /> </div>
+                  <form id="radarForm" novalidate>
+                    <div class="form-step active" data-step="1">
+                      <h5 class="mb-3 fw-bold">1. Identificação (Opcional)</h5>
+                      <div class="mb-3"> <label for="nome" class="form-label">Nome Completo </label> <input id="nome" name="nome" type="text" class="form-control"> </div>
+                      <div class="mb-3"> <label for="email" class="form-label">E-mail</label> <input id="email" name="email" type="email" class="form-control" placeholder="seunome@email.com"> </div>
+                      <div class="mb-3"> <label for="telefone" class="form-label">Telefone / WhatsApp</label> <input id="telefone" name="telefone" type="tel" class="form-control" placeholder="(00) 90000-0000" maxlength="15"> </div>
+                      <div class="d-flex justify-content-end mt-4"> <button type="button" class="btn btn-primary next-btn">Avançar</button> </div>
                     </div>
-                    <div class="d-grid gap-2 mt-4 pt-2">
-                        <button type="submit" id="submitButton" class="btn btn-primary btn-lg"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button>
-                        <button type="button" class="btn btn-outline-secondary prev-btn">Voltar</button>
+                    <div class="form-step" data-step="2">
+                      <h5 class="mb-3 fw-bold">2. Detalhes da Ocorrência</h5>
+                      <div id="motivational-quote"></div>
+                      <div class="mb-3">
+                          <div class="d-flex justify-content-between align-items-center mb-1">
+                              <label for="endereco" class="form-label mb-0">Endereço da Ocorrência</label>
+                              <button type="button" id="getLocationBtn" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"> 
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin-map" viewBox="0 0 16 16"> <path fill-rule="evenodd" d="M3.1 11.2a.5.5 0 0 1 .4-.2H6a.5.5 0 0 1 0 1H3.75L1.5 15h13l-2.25-3H10a.5.5 0 0 1 0-1h2.5a.5.5 0 0 1 .4.2l3 4a.5.5 0 0 1-.4.8H.5a.5.5 0 0 1-.4-.8l3-4z"/> <path fill-rule="evenodd" d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999z"/> </svg>
+                                <span>Usar Localização</span> 
+                              </button>
+                          </div>
+                          <input id="endereco" name="endereco" type="text" class="form-control" placeholder="Rua, Número, Bairro...">
+                      </div>
+                      <div class="mb-3">
+                          <label for="descricao" class="form-label">Descreva o que aconteceu *</label>
+                          <textarea id="descricao" name="descricao" rows="4" class="form-control" required maxlength="1000"></textarea>
+                      </div>
+                      <div class="mb-3">
+                          <div class="d-flex justify-content-between align-items-center">
+                              <label for="categoria" class="form-label mb-0">Categoria</label>
+                              <div id="ai-suggestion"></div>
+                          </div>
+                          <select id="categoria" name="categoria" class="form-select mt-1"> <option value="">Selecione a categoria</option><option>Buraco na via</option> <option>Iluminação pública</option> <option>Vazamento de água</option> <option>Limpeza de terreno / Lixo</option> <option>Poluição sonora</option> <option>Poluição visual</option> <option>Segurança pública</option> <option>Saúde</option> <option>Outro</option> </select>
+                      </div>
+                      <div id="sub-categoria-iluminacao" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-iluminacao-select" class="form-label">Qual o problema de iluminação?</label> <select id="sub-categoria-iluminacao-select" class="form-select"> <option>Poste com lâmpada queimada</option><option>Poste danificado ou caído</option><option>Fios soltos ou em risco</option><option>Vários postes apagados na rua</option> </select> </div>
+                      <div id="sub-categoria-agua" class="mb-3 sub-category-wrapper"> <label for="sub-categoria-agua-select" class="form-label">Onde é o vazamento?</label> <select id="sub-categoria-agua-select" class="form-select"> <option>Na rua / asfalto</option><option>Na calçada</option><option>Em terreno baldio / área de grama</option> </select> </div>
+                      <div class="d-flex justify-content-between mt-4"> <button type="button" class="btn btn-secondary prev-btn">Voltar</button> <button type="button" class="btn btn-primary next-btn">Avançar</button> </div>
                     </div>
-                  </div>
-                </form>
+                    <div class="form-step" data-step="3">
+                      <h5 class="mb-3 fw-bold">3. Evidência (Opcional)</h5>
+                      <div class="mb-3">
+                          <label for="imagem" class="form-label">Anexar uma Foto</label>
+                          <input class="form-control" type="file" id="imagem" name="imagem" accept="image/*">
+                          <div class="text-center"> <img id="imagePreview" class="mt-3 rounded" src="" alt="Pré-visualização da imagem" style="display: none; max-width: 100%; max-height: 200px; border: 1px solid var(--border-color); padding: 4px;" /> </div>
+                      </div>
+                      <div class="d-grid gap-2 mt-4 pt-2">
+                          <button type="submit" id="submitButton" class="btn btn-primary btn-lg"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button>
+                          <button type="button" class="btn btn-outline-secondary prev-btn">Voltar</button>
+                      </div>
+                    </div>
+                  </form>
+              </div>
+              <div id="status" class="mt-3 text-center"></div>
             </div>
-            <div id="status" class="mt-3 text-center"></div>
           </div>
-        </div>
-        <div class="card card-back">
-          <div id="success-message" class="card-body p-4 p-md-5 d-flex flex-column justify-content-center text-center">
-            <h4>Ocorrência Registrada!</h4>
-            <p>Obrigado por fazer a sua parte por uma cidade melhor. O seu comprovante em PDF será baixado automaticamente.</p>
-            <div id="post-submission-info" class="mt-3 p-3 rounded"></div>
-            <p class="mt-4">Se o download não iniciar, <a href="#" id="download-pdf-link">clique aqui</a>.</p>
-            <button id="newReportBtn" class="btn btn-primary w-100 mt-auto">Registrar Nova Ocorrência</button>
+          
+          <div class="card card-back">
+            <div id="success-message" class="card-body p-4 p-md-5 d-flex flex-column justify-content-center text-center">
+              <div class="icon-success">✓</div>
+              <h4>Ocorrência Registrada!</h4>
+              <p class="text-muted">Obrigado por fazer a sua parte por uma cidade melhor.</p>
+              <div id="post-submission-info" class="mt-3 p-3 rounded"></div>
+              <p class="mt-4 small">Seu comprovante em PDF será baixado. Se não iniciar, <a href="#" id="download-pdf-link">clique aqui</a>.</p>
+              <button id="newReportBtn" class="btn btn-primary w-100 mt-auto">Registrar Nova Ocorrência</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_I1C2pm2wti1a0HIkV-DjGNJZ8aS4hzP9wBms-sdr5WqUhpoLMxE0-NPGrABEnXMo/exec';
-  const { jsPDF } = window.jspdf;
+  <script>
+    // URL do Google Apps Script para enviar os dados do formulário
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8y2VgR2alokhxidro5N_vkniIKUcsH2ViWaythde4JGkvDr1EQJnVu_zQo80GEMqx/exec';
+    const { jsPDF } = window.jspdf;
 
-  document.addEventListener('DOMContentLoaded', function() {
-    const splashScreen = document.getElementById('splash-screen');
-    const mainContent = document.getElementById('main-content');
-    const subtitle = document.getElementById('splash-subtitle');
-    const greetingEl = document.getElementById('greeting');
-    const motivationalQuoteEl = document.getElementById('motivational-quote');
-
-    const motivationalQuotes = [
-        "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.",
-        "Você sabia? Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.",
-        "A sua participação é a ferramenta mais poderosa para o bem-estar da nossa comunidade."
-    ];
-    motivationalQuoteEl.textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-    
-    const textToType = "A sua voz para uma cidade melhor.";
-    
-    setTimeout(() => {
-        speakWelcomeMessage();
-        subtitle.textContent = textToType;
-    }, 3000);
-
-    setTimeout(() => {
-      splashScreen.classList.add('hidden');
-      document.body.style.overflow = 'auto';
-      mainContent.classList.add('visible');
-    }, 4500); // Tempo reduzido já que o som foi removido
-
-    const hour = new Date().getHours();
-    const bomDiaMessages = [ "Bom dia! Pronto para fazer a diferença na nossa cidade hoje?", "Bom dia! O sol nasceu, e com ele a oportunidade de melhorar nosso bairro." ];
-    const boaTardeMessages = [ "Boa tarde! Uma pequena ação sua pode resolver um grande problema.", "Boa tarde! Como podemos ajudar a melhorar a cidade agora?" ];
-    const boaNoiteMessages = [
-        "Boa noite! Sabia que 90% dos problemas de iluminação reportados aqui são resolvidos em 72 horas?", "Boa noite! Seu registro ajuda a prefeitura a direcionar recursos de forma mais inteligente.",
-        "Boa noite! No último mês, os cidadãos ajudaram a mapear mais de 200 buracos na via, agilizando os reparos.", "Boa noite! Cidades que usam dados de cidadãos como você melhoram em até 25% a qualidade dos serviços públicos."
-    ];
-
-    let messages = (hour >= 5 && hour < 12) ? bomDiaMessages : (hour >= 12 && hour < 18) ? boaTardeMessages : boaNoiteMessages;
-    greetingEl.textContent = messages[Math.floor(Math.random() * messages.length)];
-  });
-
-  function speakWelcomeMessage() {
-    if (typeof SpeechSynthesisUtterance === 'undefined') return;
-    try {
-        const utterance = new SpeechSynthesisUtterance("Bem-vindo ao Radar Cidadão. A sua voz para uma cidade melhor.");
-        utterance.lang = 'pt-BR';
-        speechSynthesis.speak(utterance);
-    } catch (error) { console.error("Erro na síntese de voz:", error); }
-  }
-
-  let currentStep = 1;
-  const form = document.getElementById('radarForm');
-  const cardFlipper = document.getElementById('card-flipper');
-  const progressBar = document.getElementById('progress-bar');
-  const progressBarLabel = document.getElementById('progress-bar-label');
-  const steps = document.querySelectorAll('.form-step');
-  const totalSteps = steps.length;
-
-  function showStep(stepNumber) {
-    steps.forEach(step => step.classList.remove('active'));
-    document.querySelector(`.form-step[data-step="${stepNumber}"]`).classList.add('active');
-    updateProgressBar(stepNumber);
-  }
-
-  function updateProgressBar(stepNumber) {
-    const progress = (stepNumber / totalSteps) * 100 - ((1 / totalSteps) * 100) / 2;
-    progressBar.style.width = `${progress}%`;
-    progressBarLabel.textContent = `Etapa ${stepNumber} de ${totalSteps}`;
-  }
-  
-  function validateStep(stepNumber) {
-    let isValid = true;
-    const currentStepElement = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
-    const requiredFields = currentStepElement.querySelectorAll('[required]');
-    
-    requiredFields.forEach(field => {
-        field.classList.remove('is-invalid-shake');
-        if (!field.value.trim()) { isValid = false; field.classList.add('is-invalid-shake'); }
-    });
-
-    if (stepNumber === 1) {
-        const nomeInput = document.getElementById('nome');
-        const nomeValue = nomeInput.value.trim();
-        const nomeRegex = /^[a-zA-Z\u00C0-\u017F\s']{3,}$/;
-        if (nomeValue && !nomeRegex.test(nomeValue)) {
-            isValid = false; nomeInput.classList.add('is-invalid-shake');
-            showError('Se preenchido, o nome deve ser válido (mínimo 3 letras, sem números ou símbolos).');
-            setTimeout(() => nomeInput.classList.remove('is-invalid-shake'), 1000);
-            return false; 
-        }
-    }
-    if (!isValid && !document.querySelector('.alert')) {
-        showError('Por favor, preencha os campos obrigatórios.');
-        setTimeout(() => { requiredFields.forEach(field => field.classList.remove('is-invalid-shake')); }, 1000);
-    }
-    return isValid;
-  }
-
-  document.querySelectorAll('.next-btn').forEach(button => {
-    button.addEventListener('click', () => { if (validateStep(currentStep)) { currentStep++; showStep(currentStep); } });
-  });
-
-  document.querySelectorAll('.prev-btn').forEach(button => {
-    button.addEventListener('click', () => { currentStep--; showStep(currentStep); });
-  });
-
-  const statusDiv = document.getElementById('status');
-  const submitButton = document.getElementById('submitButton');
-  const phoneInput = document.getElementById('telefone');
-  const descriptionInput = document.getElementById('descricao');
-  const aiSuggestionEl = document.getElementById('ai-suggestion');
-  const newReportBtn = document.getElementById('newReportBtn');
-  const imageInput = document.getElementById('imagem');
-  const imagePreview = document.getElementById('imagePreview');
-  const getLocationBtn = document.getElementById('getLocationBtn');
-  const addressInput = document.getElementById('endereco');
-  const categoriaSelect = document.getElementById('categoria');
-
-  phoneInput.addEventListener('input', (e) => {
-    let value = e.target.value.replace(/\D/g, '').slice(0, 11);
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-    value = value.replace(/(\d{5})(\d)/, '$1-$2');
-    e.target.value = value;
-  });
-
-  const keywordMap = { 'lâmpada': 'Iluminação pública', 'poste': 'Iluminação pública', 'escuro': 'Iluminação pública', 'luz': 'Iluminação pública', 'buraco': 'Buraco na via', 'asfalto': 'Buraco na via', 'cratera': 'Buraco na via', 'água': 'Vazamento de água', 'cano': 'Vazamento de água', 'vazando': 'Vazamento de água', 'lixo': 'Limpeza de terreno / Lixo', 'sujeira': 'Limpeza de terreno / Lixo', 'entulho': 'Limpeza de terreno / Lixo', 'barulho': 'Poluição sonora', 'som alto': 'Poluição sonora', 'pichação': 'Poluição visual', 'cartaz': 'Poluição visual', 'placa': 'Poluição visual', 'assalto': 'Segurança pública', 'roubo': 'Segurança pública', 'suspeito': 'Segurança pública', 'posto': 'Saúde', 'ambulância': 'Saúde', 'atendimento': 'Saúde' };
-  descriptionInput.addEventListener('input', () => {
-      const text = descriptionInput.value.toLowerCase();
-      let suggestionMade = false;
-      for (const keyword in keywordMap) {
-          if (text.includes(keyword)) {
-              const category = keywordMap[keyword];
-              aiSuggestionEl.innerHTML = `💡 Sugestão: <strong>${category}</strong>`;
-              aiSuggestionEl.style.display = 'block';
-              if (categoriaSelect.value !== category) { categoriaSelect.value = category; categoriaSelect.dispatchEvent(new Event('change')); }
-              suggestionMade = true; break;
-          }
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // --- LÓGICA DO MENU FLUTUANTE ---
+      const menuToggle = document.getElementById('menuToggle');
+      const sideMenu = document.getElementById('sideMenu');
+      if (menuToggle && sideMenu) {
+        let menuTimeout;
+        menuToggle.addEventListener('click', () => {
+          clearTimeout(menuTimeout);
+          sideMenu.classList.add('show');
+          menuToggle.classList.add('active');
+          menuTimeout = setTimeout(() => {
+            sideMenu.classList.remove('show');
+            menuToggle.classList.remove('active');
+          }, 3000);
+        });
       }
-      if (!suggestionMade) { aiSuggestionEl.style.display = 'none'; }
-  });
 
-  categoriaSelect.addEventListener('change', (e) => {
-    const selectedCategory = e.target.value;
-    document.querySelectorAll('.sub-category-wrapper').forEach(wrapper => {
-        wrapper.style.display = 'none';
-        const select = wrapper.querySelector('select');
-        if (select) { select.removeAttribute('name'); }
+      // --- LÓGICA DO FORMULÁRIO E DA PÁGINA ---
+      const splashScreen = document.getElementById('splash-screen');
+      const mainContent = document.getElementById('main-content');
+      const subtitle = document.getElementById('splash-subtitle');
+      const greetingEl = document.getElementById('greeting');
+      const motivationalQuoteEl = document.getElementById('motivational-quote');
+
+      // Frases motivacionais e saudações
+      const motivationalQuotes = [
+          "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.",
+          "Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.",
+          "Sua participação é a ferramenta mais poderosa para o bem-estar da comunidade."
+      ];
+      motivationalQuoteEl.textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+      
+      const textToType = "A sua voz para uma cidade melhor.";
+      setTimeout(() => {
+        // speakWelcomeMessage(); // Removido por ser uma má prática de UX sem consentimento do usuário
+        subtitle.textContent = textToType;
+      }, 2200);
+
+      // Transição da tela de abertura para o conteúdo principal
+      setTimeout(() => {
+        splashScreen.classList.add('hidden');
+        mainContent.classList.add('visible');
+      }, 3500); // Tempo reduzido para uma experiência mais ágil
+
+      // Mensagem de saudação baseada na hora do dia
+      const hour = new Date().getHours();
+      const bomDiaMessages = [ "Bom dia! Pronto para fazer a diferença hoje?", "Bom dia! O sol nasceu, e com ele a chance de melhorar nosso bairro." ];
+      const boaTardeMessages = [ "Boa tarde! Sua ação pode resolver um grande problema.", "Boa tarde! Como podemos ajudar a cidade agora?" ];
+      const boaNoiteMessages = [ "Boa noite! Um registro seu pode iluminar o caminho de todos.", "Boa noite! Obrigado por ajudar a cuidar da nossa cidade." ];
+      let messages = (hour >= 5 && hour < 12) ? bomDiaMessages : (hour >= 12 && hour < 18) ? boaTardeMessages : boaNoiteMessages;
+      greetingEl.textContent = messages[Math.floor(Math.random() * messages.length)];
+
+      // Variáveis do formulário
+      let currentStep = 1;
+      const form = document.getElementById('radarForm');
+      const cardFlipper = document.getElementById('card-flipper');
+      const progressBar = document.getElementById('progress-bar');
+      const progressBarLabel = document.getElementById('progress-bar-label');
+      const steps = document.querySelectorAll('.form-step');
+      const totalSteps = steps.length;
+      
+      // Função para mostrar a etapa atual do formulário
+      const showStep = (stepNumber) => {
+        steps.forEach(step => step.classList.remove('active'));
+        document.querySelector(`.form-step[data-step="${stepNumber}"]`).classList.add('active');
+        updateProgressBar(stepNumber);
+      }
+      
+      // Função para atualizar a barra de progresso
+      const updateProgressBar = (stepNumber) => {
+        const progress = (stepNumber / totalSteps) * 100;
+        progressBar.style.width = `${progress}%`;
+        progressBarLabel.textContent = `Etapa ${stepNumber} de ${totalSteps}`;
+      }
+
+      // Função para validar campos obrigatórios da etapa atual
+      const validateStep = (stepNumber) => {
+        let isValid = true;
+        const currentStepElement = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
+        const requiredFields = currentStepElement.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+            field.classList.remove('is-invalid-shake');
+            if (!field.value.trim()) {
+              isValid = false; 
+              field.classList.add('is-invalid-shake');
+              setTimeout(() => field.classList.remove('is-invalid-shake'), 500);
+            }
+        });
+
+        if (stepNumber === 1) {
+            const nomeInput = document.getElementById('nome');
+            const nomeValue = nomeInput.value.trim();
+            if (nomeValue && !/^[a-zA-Z\u00C0-\u017F\s']{3,}$/.test(nomeValue)) {
+                isValid = false; 
+                nomeInput.classList.add('is-invalid-shake');
+                showError('Se preenchido, o nome deve ser válido.');
+                setTimeout(() => nomeInput.classList.remove('is-invalid-shake'), 500);
+            }
+        }
+        if (!isValid && !document.querySelector('.alert')) {
+            showError('Por favor, preencha os campos obrigatórios.');
+        }
+        return isValid;
+      }
+      
+      // Navegação do formulário
+      document.querySelectorAll('.next-btn').forEach(button => {
+        button.addEventListener('click', () => { if (validateStep(currentStep)) { currentStep++; showStep(currentStep); } });
+      });
+      document.querySelectorAll('.prev-btn').forEach(button => {
+        button.addEventListener('click', () => { currentStep--; showStep(currentStep); });
+      });
+
+      // Elementos do formulário
+      const phoneInput = document.getElementById('telefone');
+      const descriptionInput = document.getElementById('descricao');
+      const aiSuggestionEl = document.getElementById('ai-suggestion');
+      const categoriaSelect = document.getElementById('categoria');
+
+      // Máscara para o campo de telefone
+      phoneInput.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '').slice(0, 11);
+        value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+        value = value.replace(/(\d{5})(\d)/, '$1-$2');
+        e.target.value = value;
+      });
+
+      // Sugestão de categoria por IA (baseada em palavras-chave)
+      const keywordMap = { 'lâmpada': 'Iluminação pública', 'poste': 'Iluminação pública', 'escuro': 'Iluminação pública', 'luz': 'Iluminação pública', 'buraco': 'Buraco na via', 'asfalto': 'Buraco na via', 'cratera': 'Buraco na via', 'água': 'Vazamento de água', 'cano': 'Vazamento de água', 'vazando': 'Vazamento de água', 'lixo': 'Limpeza de terreno / Lixo', 'sujeira': 'Limpeza de terreno / Lixo', 'entulho': 'Limpeza de terreno / Lixo', 'barulho': 'Poluição sonora', 'som alto': 'Poluição sonora', 'pichação': 'Poluição visual', 'cartaz': 'Poluição visual', 'placa': 'Poluição visual', 'assalto': 'Segurança pública', 'roubo': 'Segurança pública', 'suspeito': 'Segurança pública', 'posto': 'Saúde', 'ambulância': 'Saúde', 'atendimento': 'Saúde' };
+      descriptionInput.addEventListener('input', () => {
+          const text = descriptionInput.value.toLowerCase();
+          let suggestionMade = false;
+          for (const keyword in keywordMap) {
+              if (text.includes(keyword)) {
+                  const category = keywordMap[keyword];
+                  aiSuggestionEl.innerHTML = `💡 Sugestão: <strong>${category}</strong>`;
+                  aiSuggestionEl.style.display = 'block';
+                  if (categoriaSelect.value !== category) { 
+                    categoriaSelect.value = category; 
+                    categoriaSelect.dispatchEvent(new Event('change')); 
+                  }
+                  suggestionMade = true; break;
+              }
+          }
+          if (!suggestionMade) { aiSuggestionEl.style.display = 'none'; }
+      });
+
+      // Mostrar subcategorias quando aplicável
+      categoriaSelect.addEventListener('change', (e) => {
+        const selectedCategory = e.target.value;
+        document.querySelectorAll('.sub-category-wrapper').forEach(wrapper => {
+            wrapper.style.display = 'none';
+            wrapper.querySelector('select')?.removeAttribute('name');
+        });
+        let targetId = null;
+        if (selectedCategory === 'Iluminação pública') targetId = 'sub-categoria-iluminacao';
+        else if (selectedCategory === 'Vazamento de água') targetId = 'sub-categoria-agua';
+        
+        if (targetId) {
+          const targetWrapper = document.getElementById(targetId);
+          targetWrapper.style.display = 'block';
+          targetWrapper.querySelector('select').setAttribute('name', 'detalhe_ocorrencia');
+        }
+      });
+      
+      // Botão de Geolocalização
+      document.getElementById('getLocationBtn').addEventListener('click', function() {
+        if (!navigator.geolocation) { showError('Geolocalização não é suportada.'); return; }
+        const btn = this;
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
+              .then(res => res.json()).then(data => { document.getElementById('endereco').value = data.display_name || ''; })
+              .catch(() => showError('Erro ao obter nome do endereço.'))
+              .finally(() => { btn.disabled = false; btn.innerHTML = originalContent; });
+          }, 
+          () => { showError('Não foi possível obter sua localização.'); btn.disabled = false; btn.innerHTML = originalContent; }
+        );
+      });
+
+      // Pré-visualização da imagem
+      const imageInput = document.getElementById('imagem');
+      const imagePreview = document.getElementById('imagePreview');
+      imageInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => { imagePreview.src = e.target.result; imagePreview.style.display = 'block'; };
+          reader.readAsDataURL(file);
+        } else { imagePreview.src = ''; imagePreview.style.display = 'none'; }
+      });
+      
+      // Envio do formulário
+      let lastSubmittedData = {};
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!validateStep(currentStep)) return;
+        setLoading(true);
+
+        const file = imageInput.files[0];
+        let data = Object.fromEntries(new FormData(form));
+        data.protocolo = `RC-${Date.now()}`;
+        
+        lastSubmittedData = data;
+
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => { 
+            const [, base64String] = event.target.result.split(','); 
+            data.imagemBase64 = base64String; 
+            data.imagemMimeType = file.type; 
+            data.imagemNome = file.name; 
+            sendData(data); 
+          };
+          reader.onerror = () => { showError('Não foi possível ler o arquivo de imagem.'); setLoading(false); };
+          reader.readAsDataURL(file);
+        } else { 
+          sendData(data); 
+        }
+      });
+
+      // Função para enviar os dados para o Google Apps Script
+      const sendData = (data) => {
+        fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
+        .then(response => response.json())
+        .then(result => {
+          if (result.status === 'success') {
+            const postSubmissionInfo = document.getElementById('post-submission-info');
+            let specificMessage = '';
+            if (data.categoria === 'Poluição sonora') { specificMessage = `<p class="mb-2"><strong>Atenção:</strong> Ocorrências de poluição sonora podem exigir análise e monitoramento no local.</p>`; } 
+            else if (data.categoria === 'Buraco na via') { specificMessage = `<p class="mb-2"><strong>Ação Imediata:</strong> Sua ocorrência já foi encaminhada para o setor de manutenção e obras.</p>`; }
+            const generalMessage = `<p class="mb-1 fst-italic">As informações são direcionadas à prefeitura de imediato.</p>`;
+            postSubmissionInfo.innerHTML = specificMessage + generalMessage;
+            cardFlipper.classList.add('is-flipped');
+          } else { 
+            throw new Error(result.message || 'Ocorreu um erro desconhecido.'); 
+          }
+        })
+        .catch(error => { showError(`<strong>Erro ao enviar:</strong> ${error.message}`); })
+        .finally(() => setLoading(false));
+      }
+      
+      // Botão para registrar nova ocorrência
+      document.getElementById('newReportBtn').addEventListener('click', () => {
+        cardFlipper.classList.remove('is-flipped');
+        setTimeout(() => {
+            form.reset();
+            document.querySelectorAll('.sub-category-wrapper').forEach(w => w.style.display = 'none');
+            imagePreview.style.display = 'none';
+            aiSuggestionEl.style.display = 'none';
+            document.getElementById('status').innerHTML = '';
+            currentStep = 1;
+            showStep(currentStep);
+            motivationalQuoteEl.textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+        }, 600);
+      });
+      
+      // Funções de feedback para o usuário
+      const statusDiv = document.getElementById('status');
+      const showError = (message) => {
+          setLoading(false);
+          statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
+          setTimeout(() => { statusDiv.innerHTML = ''; }, 6000);
+      }
+
+      const setLoading = (isLoading) => {
+        const submitButton = document.getElementById('submitButton');
+        submitButton.disabled = isLoading;
+        submitButton.querySelector('#buttonText').style.display = isLoading ? 'none' : 'inline';
+        submitButton.querySelector('#buttonSpinner').style.display = isLoading ? 'inline-block' : 'none';
+      }
+
+      // Inicializa o formulário na primeira etapa
+      updateProgressBar(currentStep);
     });
-    let targetWrapper = null;
-    if (selectedCategory === 'Iluminação pública') { targetWrapper = document.getElementById('sub-categoria-iluminacao'); } 
-    else if (selectedCategory === 'Vazamento de água') { targetWrapper = document.getElementById('sub-categoria-agua'); }
-    if(targetWrapper) {
-      targetWrapper.style.display = 'block';
-      targetWrapper.querySelector('select').setAttribute('name', 'detalhe_ocorrencia');
-    }
-  });
-
-  getLocationBtn.addEventListener('click', () => {
-    if (!navigator.geolocation) { showError('Geolocalização não é suportada pelo seu navegador.'); return; }
-    const originalBtnText = getLocationBtn.innerHTML;
-    getLocationBtn.disabled = true;
-    getLocationBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
-    navigator.geolocation.getCurrentPosition( (position) => {
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
-          .then(res => res.json()).then(data => { addressInput.value = data.display_name || ''; })
-          .catch(() => showError('Erro ao obter o nome do endereço.'))
-          .finally(() => { getLocationBtn.disabled = false; getLocationBtn.innerHTML = originalBtnText; });
-      }, () => { showError('Não foi possível obter a sua localização.'); getLocationBtn.disabled = false; getLocationBtn.innerHTML = originalBtnText; }
-    );
-  });
-
-  imageInput.addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => { imagePreview.src = e.target.result; imagePreview.style.display = 'block'; };
-      reader.readAsDataURL(file);
-    } else { imagePreview.src = ''; imagePreview.style.display = 'none'; }
-  });
-  
-  let lastSubmittedData = {};
-  
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    if (!validateStep(currentStep)) return;
-    setLoading(true);
-
-    const protocol = `RC-${Date.now()}`;
-    
-    const file = imageInput.files[0];
-    let data = Object.fromEntries(new FormData(form));
-    data.protocolo = protocol;
-
-    const activeSubCategory = document.querySelector('.sub-category-wrapper[style*="block"]');
-    if (activeSubCategory) { const subSelect = activeSubCategory.querySelector('select'); if (subSelect && subSelect.name) { data[subSelect.name] = subSelect.value; } }
-    
-    lastSubmittedData = data;
-
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => { const [, base64String] = event.target.result.split(','); data.imagemBase64 = base64String; data.imagemMimeType = file.type; data.imagemNome = file.name; sendData(data); };
-      reader.onerror = () => showError('Não foi possível ler o arquivo de imagem.'); reader.readAsDataURL(file);
-    } else { sendData(data); }
-  });
-
-  function sendData(data) {
-    fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
-    .then(response => response.json())
-    .then(result => {
-      if (result.status === 'success') {
-        const postSubmissionInfo = document.getElementById('post-submission-info');
-        let specificMessage = '';
-        if (data.categoria === 'Poluição sonora') { specificMessage = `<p class="mb-2"><strong>Atenção:</strong> Para ocorrências de poluição sonora, nossa equipe irá analisar e, se necessário, monitorar o local para fins de esclarecimento.</p>`; } 
-        else if (data.categoria === 'Buraco na via') { specificMessage = `<p class="mb-2"><strong>Ação Imediata:</strong> Sua ocorrência sobre buracos na via já foi encaminhada para o setor de manutenção e obras.</p>`; }
-        const generalMessage = `<p class="mb-1 fst-italic">As informações prestadas são direcionadas à prefeitura de imediato.</p><p class="mb-0 fst-italic">Todo registro é armazenado e analisado para prezarmos pela eficiência dos serviços em nossa cidade.</p>`;
-        postSubmissionInfo.innerHTML = specificMessage + generalMessage;
-        
-        cardFlipper.classList.add('is-flipped');
-        // A função generateAndDownloadPDF não foi fornecida, então comentei a chamada
-        // generateAndDownloadPDF(lastSubmittedData);
-        
-      } else { throw new Error(result.message || 'Ocorreu um erro desconhecido.'); }
-    })
-    .catch(error => { showError(`<strong>Erro ao enviar:</strong> ${error.message}`); })
-    .finally(() => setLoading(false));
-  }
-  
-  document.getElementById('download-pdf-link').addEventListener('click', (e) => {
-      e.preventDefault();
-      // A função generateAndDownloadPDF não foi fornecida
-      // if(lastSubmittedData.protocolo) { generateAndDownloadPDF(lastSubmittedData); }
-      alert('Função de download do PDF não implementada.');
-  });
-
-  newReportBtn.addEventListener('click', () => {
-    cardFlipper.classList.remove('is-flipped');
-    setTimeout(() => {
-        form.reset();
-        document.querySelectorAll('.sub-category-wrapper').forEach(wrapper => wrapper.style.display = 'none');
-        imagePreview.style.display = 'none';
-        aiSuggestionEl.style.display = 'none';
-        statusDiv.innerHTML = '';
-        currentStep = 1;
-        showStep(currentStep);
-        const motivationalQuotes = [ "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.", "Você sabia? Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.", "A sua participação é a ferramenta mais poderosa para o bem-estar da nossa comunidade." ];
-        document.getElementById('motivational-quote').textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
-    }, 400);
-  });
-
-  function showError(message) {
-      setLoading(false); console.error('Erro:', message);
-      statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show" role="alert">${message}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>`;
-      setTimeout(() => { statusDiv.innerHTML = ''; }, 6000);
-  }
-
-  function setLoading(isLoading) {
-    submitButton.disabled = isLoading;
-    submitButton.querySelector('#buttonText').textContent = isLoading ? 'Enviando...' : 'Enviar Ocorrência';
-    submitButton.querySelector('#buttonSpinner').style.display = isLoading ? 'inline-block' : 'none';
-  }
-</script>
+  </script>
 </body>
 </html>

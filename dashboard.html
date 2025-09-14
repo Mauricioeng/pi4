@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Radar Cidadão</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #0093E9;
+            --gradient-start: #0093E9;
+            --gradient-end: #80D0C7;
+            --background-color: #f0f4f8;
+            --card-background-color: #ffffff;
+            --text-color: #2c3e50;
+            --muted-text-color: #7f8c8d;
+            --border-color-rgba: rgba(0, 0, 0, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem; /* Padding melhor para mobile */
+            overflow-x: hidden;
+        }
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(12, 1fr);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        main.loaded { opacity: 1; transform: translateY(0); }
+        .header {
+            grid-column: 1 / -1;
+            margin-bottom: 1rem;
+        }
+        .header h1 { font-weight: 700; margin-bottom: 0.25rem; font-size: 1.75rem; }
+        .header p { color: var(--muted-text-color); }
+        .stat-card {
+            grid-column: span 12; 
+            background-color: var(--card-background-color);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px var(--border-color-rgba);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .stat-card .icon {
+            font-size: 1.5rem; /* Ajustado */
+            min-width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-image: linear-gradient(45deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 147, 233, 0.2);
+        }
+        .stat-card .value { font-size: 2rem; font-weight: 700; }
+        .stat-card .label { color: var(--muted-text-color); font-size: 0.9rem; }
+        .chart-container, .table-container {
+            grid-column: 1 / -1;
+            background-color: var(--card-background-color);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 20px var(--border-color-rgba);
+        }
+        .table-container input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #dce4ec;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th, .data-table td { padding: 0.8rem; text-align: left; border-bottom: 1px solid #dce4ec; }
+        .data-table th { font-weight: 500; color: var(--muted-text-color); font-size: 0.9rem; text-transform: uppercase; }
+        .data-table tbody tr:hover { background-color: #f7f9fc; }
+        .data-table .category-badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            background-color: #e0e7ee;
+            color: #7f8c8d;
+        }
+        .loader-container {
+            display: flex; justify-content: center; align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--background-color); z-index: 9999;
+        }
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        @media (min-width: 600px) {
+            body { padding: 2rem; }
+            .stat-card { grid-column: span 6; }
+        }
+        @media (min-width: 992px) {
+            .stat-card { grid-column: span 4; }
+            .chart-container { grid-column: span 6; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader-container" class="loader-container">
+        <div class="loader"></div>
+    </div>
+    
+    <main id="dashboard-content" style="visibility: hidden;">
+        <header class="header">
+            <h1>Dashboard - Radar Cidadão</h1>
+            <p>Visão geral dos registros enviados pela comunidade.</p>
+        </header>
+
+        <div class="stat-card">
+            <div class="icon">📊</div>
+            <div>
+                <div id="total-ocorrencias" class="value">0</div>
+                <div class="label">Ocorrências Totais</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="icon">📅</div>
+            <div>
+                <div id="ocorrencias-hoje" class="value">0</div>
+                <div class="label">Registros Hoje</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="icon">🏷️</div>
+            <div>
+                <div id="total-categorias" class="value">0</div>
+                <div class="label">Categorias Distintas</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="timeChart"></canvas>
+        </div>
+
+        <div class="table-container">
+            <h3>Últimos Registros</h3>
+            <input type="text" id="searchInput" placeholder="Buscar por nome, categoria, endereço...">
+            <div style="overflow-x: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Data</th><th>Nome</th><th>Categoria</th><th>Endereço</th></tr>
+                    </thead>
+                    <tbody id="dataTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- URL DO SEU APP DA WEB ---
+            const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxayBz8iDUr6rYCVr67d9VbVzfVHfyJhsPkM2Izjgvkj7GE9RxH6TvFoOEbFCnRskMi/exec";
+
+            const loader = document.getElementById('loader-container');
+            const content = document.getElementById('dashboard-content');
+            
+            fetch(WEB_APP_URL)
+                .then(response => {
+                    if (!response.ok) { throw new Error(`Erro de rede: ${response.statusText}`); }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.status === "success") {
+                        const data = result.data;
+                        updateKPIs(data);
+                        createCategoryChart(data);
+                        createTimeChart(data);
+                        populateTable(data);
+                        setupSearchFilter(data);
+                    } else {
+                        throw new Error(result.message || "O script retornou um erro.");
+                    }
+                })
+                .catch(error => {
+                    console.error("Erro ao buscar dados:", error);
+                    content.innerHTML = `<p style="text-align:center; color: red; padding: 2rem;"><b>Falha ao carregar os dados.</b><br>Verifique se a URL do App da Web está correta e se a planilha do Google tem a permissão de acesso 'Qualquer pessoa com o link'.</p>`;
+                    content.style.visibility = 'visible';
+                })
+                .finally(() => {
+                    loader.style.display = 'none';
+                    content.style.visibility = 'visible';
+                    content.classList.add('loaded');
+                });
+            
+            function updateKPIs(data) {
+                const today = new Date().toLocaleDateString('pt-BR');
+                const ocorrenciasHoje = data.filter(item => item.data_e_hora.startsWith(today)).length;
+                const totalCategorias = new Set(data.map(item => item.categoria).filter(Boolean)).size;
+
+                document.getElementById('total-ocorrencias').textContent = data.length;
+                document.getElementById('ocorrencias-hoje').textContent = ocorrenciasHoje;
+                document.getElementById('total-categorias').textContent = totalCategorias;
+            }
+
+            function createCategoryChart(data) {
+                const ctx = document.getElementById('categoryChart').getContext('2d');
+                const categoryCounts = data.reduce((acc, item) => {
+                    if(item.categoria) {
+                       acc[item.categoria] = (acc[item.categoria] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(categoryCounts),
+                        datasets: [{
+                            label: 'Nº de Ocorrências',
+                            data: Object.values(categoryCounts),
+                            backgroundColor: 'rgba(0, 147, 233, 0.6)',
+                            borderColor: 'rgba(0, 147, 233, 1)',
+                            borderWidth: 1,
+                            borderRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Ocorrências por Categoria', font: { size: 16 } },
+                            legend: { display: false }
+                        },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+            }
+
+            function createTimeChart(data) {
+                const ctx = document.getElementById('timeChart').getContext('2d');
+                const reportsPerDay = data.reduce((acc, item) => {
+                    const date = item.data_e_hora.split(' ')[0];
+                    if (date) acc[date] = (acc[date] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const sortedDates = Object.keys(reportsPerDay).sort((a, b) => {
+                    const [dayA, monthA, yearA] = a.split('/');
+                    const [dayB, monthB, yearB] = b.split('/');
+                    return new Date(`${yearA}-${monthA}-${dayA}`) - new Date(`${yearB}-${monthB}-${dayB}`);
+                });
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedDates,
+                        datasets: [{
+                            label: 'Ocorrências por Dia',
+                            data: sortedDates.map(date => reportsPerDay[date]),
+                            fill: true,
+                            backgroundColor: 'rgba(128, 208, 199, 0.2)',
+                            borderColor: 'rgba(128, 208, 199, 1)',
+                            tension: 0.3
+                        }]
+                    },
+                     options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            title: { display: true, text: 'Linha do Tempo de Registros', font: { size: 16 } },
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            function populateTable(data) {
+                const tableBody = document.getElementById('dataTableBody');
+                tableBody.innerHTML = '';
+                const dataToDisplay = data.slice().reverse();
+                
+                if (dataToDisplay.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 2rem;">Nenhum registro encontrado.</td></tr>';
+                    return;
+                }
+
+                dataToDisplay.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.data_e_hora || ''}</td>
+                        <td>${item.nome || 'Não informado'}</td>
+                        <td><span class="category-badge">${item.categoria || 'N/A'}</span></td>
+                        <td>${item.endereco || 'Não informado'}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function setupSearchFilter(initialData) {
+                document.getElementById('searchInput').addEventListener('keyup', function() {
+                    const filter = this.value.toLowerCase();
+                    const filteredData = initialData.filter(item => {
+                        return (item.nome?.toLowerCase().includes(filter) ||
+                                item.categoria?.toLowerCase().includes(filter) ||
+                                item.endereco?.toLowerCase().includes(filter) ||
+                                item.data_e_hora?.toLowerCase().includes(filter));
+                    });
+                    populateTable(filteredData);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <title>Radar Cidadao - ESP32</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ANIMAÇÕES (NOVO) --- */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- ESTILOS GERAIS --- */
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 600px; text-align: center; }
+        h1 { color: #2c3e50; margin-bottom: 5px; animation: fadeIn 0.8s ease-out; }
+        p.subtitle { color: #7f8c8d; margin-top: 0; margin-bottom: 20px; animation: fadeIn 0.8s ease-out 0.2s; }
+        
+        /* --- ESTILOS DOS CARTÕES DE DADOS --- */
+        .card-deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background-color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
+        /* Atraso na animação para cada card */
+        .card:nth-child(1) { animation-delay: 0.3s; }
+        .card:nth-child(2) { animation-delay: 0.4s; }
+        .card:nth-child(3) { animation-delay: 0.5s; }
+        .card:nth-child(4) { animation-delay: 0.6s; }
+
+        .card h2 { margin: 0 0 10px; font-size: 1.1em; color: #34495e; }
+        .card .value { font-size: 2.2em; font-weight: 700; margin: 0; line-height: 1; animation: pulse 1.5s ease-in-out; }
+        .temp .value { color: #e67e22; }
+        .umid .value { color: #3498db; }
+        .ar .value { color: #27ae60; }
+        .location .value { color: #1abc9c; font-size: 1.8em; }
+        .card .info { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
+
+        /* --- DECLARAÇÃO DE MISSÃO --- */
+        .mission-statement {
+            background-color: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
+            border-left: 5px solid #1abc9c; text-align: left;
+            opacity: 0; animation: fadeInUp 0.5s ease-out 0.7s forwards;
+        }
+        .mission-statement p { margin: 10px 0; line-height: 1.6; color: #34495e; }
+        .mission-statement strong { color: #2c3e50; }
+        .mission-statement .future { font-style: italic; color: #7f8c8d; font-size: 0.9em; }
+        
+        /* --- RODAPÉ --- */
+        .footer-card { background: linear-gradient(45deg, #34495e, #2c3e50); color: white; padding: 15px; border-radius: 12px; font-size: 1.1em; font-weight: 300; box-shadow: 0 4px 15px rgba(0,0,0,0.1); opacity: 0; animation: fadeInUp 0.5s ease-out 0.8s forwards; }
+        .footer-card p { margin: 0; }
+
+        /* --- MENU FLUTUANTE --- */
+        #menuToggle {
+            position: fixed; top: 20px; left: 20px; z-index: 1001;
+            width: 50px; height: 50px; background: rgba(44, 62, 80, 0.7);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+            cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        #menuToggle:hover { background: rgba(44, 62, 80, 0.9); transform: scale(1.05); }
+        .menu-icon { width: 28px; height: 28px; stroke: white; stroke-width: 2.5; stroke-linecap: round; transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1); }
+        #menuToggle.active .menu-icon { transform: rotate(45deg); }
+        
+        .side-menu {
+            position: fixed; top: 85px; left: 20px; background: rgba(44, 62, 80, 0.7);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 10px; border-radius: 20px; z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.2); opacity: 0; transform: translateY(-20px) scale(0.95);
+            pointer-events: none; transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.3s;
+        }
+        .side-menu.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+        .side-menu ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .side-menu a { color: white; text-decoration: none; display: flex; justify-content: center; align-items: center; position: relative; width: 50px; height: 50px; border-radius: 50%; transition: background-color 0.2s; }
+        .side-menu a:hover { background-color: rgba(255,255,255,0.1); }
+        .side-menu svg { width: 24px; height: 24px; stroke: white; }
+        .side-menu .tooltip {
+            position: absolute; left: 115%; top: 50%; transform: translateY(-50%);
+            background-color: #2c3e50; color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 500;
+            white-space: nowrap; opacity: 0; visibility: hidden; transform: translateY(-50%) translateX(-10px);
+            transition: all 0.3s ease; pointer-events: none;
+        }
+        .side-menu a:hover .tooltip { opacity: 1; visibility: visible; transform: translateY(-50%) translateX(0); }
+    </style>
+</head>
+<body>
+    <!-- Botão e Menu Flutuante -->
+    <button id="menuToggle">
+        <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+        </svg>
+    </button>
+    <nav class="side-menu" id="sideMenu">
+        <ul>
+            <li><a href="#" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
+            <li><a href="#" title="Visão IOT"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg><span class="tooltip">Visão IOT</span></a></li>
+            <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z"/>
+        <path d="M12 11h7"/>
+        <path d="M12 12a1 1 0 1 0 0-2a1 1 0 0 0 0 2z"/>
+        <path d="M16 16l-3-3"/>
+    </svg><span class="tooltip">Radar Cidadão</span></a></li>
+        </ul>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <div class="container">
+        <h1>Radar Cidadao</h1>
+        <p class="subtitle">Monitorizacao Ambiental Colaborativa</p>
+        <div class="card-deck">
+            <div class="card temp">
+                <h2>Temperatura</h2>
+                <p class="value" id="temp-value">-- &deg;C</p>
+            </div>
+            <div class="card umid">
+                <h2>Humidade</h2>
+                <p class="value" id="umid-value">-- %</p>
+            </div>
+            <div class="card ar">
+                <h2>Qualidade do Ar</h2>
+                <p class="value" id="ar-value">--</p>
+                <p class="info" id="ar-info">(Ideal: < 1000)</p>
+            </div>
+            <div class="card location">
+                <h2>Localização</h2>
+                <p class="value">Caieiras</p>
+                <p class="info">São Paulo, BR</p>
+            </div>
+        </div>
+
+        <!-- Secção de Destaque Adicionada -->
+        <div class="mission-statement">
+            <p><strong>A análise do microclima é fundamental para a saúde.</strong> Este dispositivo é uma ferramenta poderosa para visualizar gases poluentes e compreender o clima tenso da nossa cidade com a poluição.</p>
+            <p>Tendo em vista a necessidade do munícipe, iremos até ele para compreender com análise fundamental e encaminhar os dados para órgãos públicos para providências.</p>
+            <p class="future"><strong>Em breve:</strong> Dados para medir ruído de vizinhos com som alto e o fluxo de veículos nas ruas (desenvolvimento pendente).</p>
+        </div>
+
+        <div class="footer-card">
+            <p id="status-text">A carregar dados...</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- LÓGICA DO MENU FLUTUANTE ---
+            const menuToggle = document.getElementById('menuToggle');
+            const sideMenu = document.getElementById('sideMenu');
+            let menuTimeout;
+
+            menuToggle.addEventListener('click', () => {
+                clearTimeout(menuTimeout);
+                sideMenu.classList.toggle('show');
+                menuToggle.classList.toggle('active');
+
+                // Esconde o menu se ele estiver visível
+                if (sideMenu.classList.contains('show')) {
+                    menuTimeout = setTimeout(() => {
+                        sideMenu.classList.remove('show');
+                        menuToggle.classList.remove('active');
+                    }, 4000); // Aumentei o tempo para 4 segundos
+                }
+            });
+
+            // --- LÓGICA DE BUSCA DE DADOS (THINGSPEAK) ---
+            const channelID = "3074356";
+            const readAPIKey = "V8OA94S2WPFW797S";
+            const thingSpeakURL = `https://api.thingspeak.com/channels/${channelID}/feeds/last.json?api_key=${readAPIKey}`;
+
+            async function fetchData() {
+                try {
+                    const response = await fetch(thingSpeakURL);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    if (data.field1) {
+                        document.getElementById('temp-value').innerHTML = `${parseFloat(data.field1).toFixed(1)} &deg;C`;
+                    }
+                    if (data.field2) {
+                        document.getElementById('umid-value').innerHTML = `${parseFloat(data.field2).toFixed(0)} %`;
+                    }
+                    if (data.field3) {
+                        const airQuality = parseInt(data.field3);
+                        document.getElementById('ar-value').textContent = airQuality;
+                        let airQualityText = "RUIM";
+                        if (airQuality < 1000) airQualityText = "BOM";
+                        else if (airQuality < 2000) airQualityText = "MODERADO";
+                        document.getElementById('ar-info').textContent = `${airQualityText} (Ideal: < 1000)`;
+                    }
+
+                    const lastUpdate = new Date(data.created_at).toLocaleString('pt-BR');
+                    document.getElementById('status-text').textContent = `Ultima atualizacao: ${lastUpdate}`;
+                } catch (error) {
+                    console.error("Erro ao buscar dados do ThingSpeak:", error);
+                    document.getElementById('status-text').textContent = "Erro ao carregar dados.";
+                }
+            }
+
+            fetchData();
+            setInterval(fetchData, 20000);
+        });
+    </script>
+</body>
+</html>
+

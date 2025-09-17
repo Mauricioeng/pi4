@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        /* --- ANIMAÇÕES (NOVO) --- */
+        /* --- ANIMAÇÕES --- */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -43,20 +43,47 @@
         .ar .value { color: #27ae60; }
         .location .value { color: #1abc9c; font-size: 1.8em; }
         .card .info { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
+        
+        /* --- SECÇÃO DE GRÁFICOS (NOVO) --- */
+        .charts-container {
+            background-color: white; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
+            opacity: 0; animation: fadeInUp 0.5s ease-out 0.7s forwards;
+        }
+        .charts-container h2 {
+            text-align: left; margin-top: 0; color: #34495e;
+        }
+        .chart-wrapper {
+            position: relative;
+            padding-bottom: 50%; /* Aspect ratio 2:1 */
+            height: 0;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+        .chart-wrapper:last-child { margin-bottom: 0; }
+        .chart-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
 
         /* --- DECLARAÇÃO DE MISSÃO --- */
         .mission-statement {
             background-color: white; padding: 20px; border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
             border-left: 5px solid #1abc9c; text-align: left;
-            opacity: 0; animation: fadeInUp 0.5s ease-out 0.7s forwards;
+            opacity: 0; animation: fadeInUp 0.5s ease-out 0.8s forwards;
         }
         .mission-statement p { margin: 10px 0; line-height: 1.6; color: #34495e; }
         .mission-statement strong { color: #2c3e50; }
         .mission-statement .future { font-style: italic; color: #7f8c8d; font-size: 0.9em; }
         
         /* --- RODAPÉ --- */
-        .footer-card { background: linear-gradient(45deg, #34495e, #2c3e50); color: white; padding: 15px; border-radius: 12px; font-size: 1.1em; font-weight: 300; box-shadow: 0 4px 15px rgba(0,0,0,0.1); opacity: 0; animation: fadeInUp 0.5s ease-out 0.8s forwards; }
+        .footer-card { background: linear-gradient(45deg, #34495e, #2c3e50); color: white; padding: 15px; border-radius: 12px; font-size: 1.1em; font-weight: 300; box-shadow: 0 4px 15px rgba(0,0,0,0.1); opacity: 0; animation: fadeInUp 0.5s ease-out 0.9s forwards; }
         .footer-card p { margin: 0; }
 
         /* --- MENU FLUTUANTE --- */
@@ -104,7 +131,7 @@
     <nav class="side-menu" id="sideMenu">
         <ul>
             <li><a href="#" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
-            <li><a href="#" title="Visão IOT"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg><span class="tooltip">Visão IOT</span></a></li>
+            <li><a href="#" title="Informes"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M12 4v10"/><path d="M12 4a2 2 0 1 0-4 0v10a2 2 0 1 0 4 0Z"/><path d="M12 4a2 2 0 1 1 4 0v10a2 2 0 1 1-4 0Z"/></svg><span class="tooltip">Informes</span></a></li>
             <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z"/>
         <path d="M12 11h7"/>
@@ -134,12 +161,26 @@
             </div>
             <div class="card location">
                 <h2>Localização</h2>
-                <p class="value">Caieiras</p>
-                <p class="info">São Paulo, BR</p>
+                <p class="value" id="location-value">A obter...</p>
+                <p class="info" id="location-info">&nbsp;</p>
             </div>
         </div>
 
-        <!-- Secção de Destaque Adicionada -->
+        <!-- Secção de Gráficos Históricos -->
+        <div class="charts-container">
+            <h2>Histórico das Últimas Horas</h2>
+            <div class="chart-wrapper">
+                <iframe src="https://thingspeak.com/channels/3074356/charts/1?bgcolor=%23ffffff&color=%23e67e22&dynamic=true&results=120&title=Temperatura+%28%C2%B0C%29&type=line&xaxis=Tempo&yaxis=Temperatura"></iframe>
+            </div>
+            <div class="chart-wrapper">
+                <iframe src="https://thingspeak.com/channels/3074356/charts/2?bgcolor=%23ffffff&color=%233498db&dynamic=true&results=120&title=Humidade+%28%25%29&type=line&xaxis=Tempo&yaxis=Humidade"></iframe>
+            </div>
+            <div class="chart-wrapper">
+                <iframe src="https://thingspeak.com/channels/3074356/charts/3?bgcolor=%23ffffff&color=%2327ae60&dynamic=true&results=120&title=Qualidade+do+Ar&type=line&xaxis=Tempo&yaxis=Valor"></iframe>
+            </div>
+        </div>
+
+        <!-- Secção de Destaque -->
         <div class="mission-statement">
             <p><strong>A análise do microclima é fundamental para a saúde.</strong> Este dispositivo é uma ferramenta poderosa para visualizar gases poluentes e compreender o clima tenso da nossa cidade com a poluição.</p>
             <p>Tendo em vista a necessidade do munícipe, iremos até ele para compreender com análise fundamental e encaminhar os dados para órgãos públicos para providências.</p>
@@ -163,12 +204,11 @@
                 sideMenu.classList.toggle('show');
                 menuToggle.classList.toggle('active');
 
-                // Esconde o menu se ele estiver visível
                 if (sideMenu.classList.contains('show')) {
                     menuTimeout = setTimeout(() => {
                         sideMenu.classList.remove('show');
                         menuToggle.classList.remove('active');
-                    }, 4000); // Aumentei o tempo para 4 segundos
+                    }, 4000);
                 }
             });
 
@@ -185,13 +225,13 @@
                     }
                     const data = await response.json();
 
-                    if (data.field1) {
+                    if (data && data.field1) {
                         document.getElementById('temp-value').innerHTML = `${parseFloat(data.field1).toFixed(1)} &deg;C`;
                     }
-                    if (data.field2) {
+                    if (data && data.field2) {
                         document.getElementById('umid-value').innerHTML = `${parseFloat(data.field2).toFixed(0)} %`;
                     }
-                    if (data.field3) {
+                    if (data && data.field3) {
                         const airQuality = parseInt(data.field3);
                         document.getElementById('ar-value').textContent = airQuality;
                         let airQualityText = "RUIM";
@@ -200,15 +240,62 @@
                         document.getElementById('ar-info').textContent = `${airQualityText} (Ideal: < 1000)`;
                     }
 
-                    const lastUpdate = new Date(data.created_at).toLocaleString('pt-BR');
-                    document.getElementById('status-text').textContent = `Ultima atualizacao: ${lastUpdate}`;
+                    if (data && data.created_at) {
+                       const lastUpdate = new Date(data.created_at).toLocaleString('pt-BR');
+                       document.getElementById('status-text').textContent = `Ultima atualizacao: ${lastUpdate}`;
+                    }
                 } catch (error) {
                     console.error("Erro ao buscar dados do ThingSpeak:", error);
                     document.getElementById('status-text').textContent = "Erro ao carregar dados.";
                 }
             }
 
+            // --- LÓGICA DE GEOLOCALIZAÇÃO (NOVO) ---
+            async function fetchLocation() {
+                const locationValue = document.getElementById('location-value');
+                const locationInfo = document.getElementById('location-info');
+
+                if (!navigator.geolocation) {
+                    locationValue.textContent = "N/A";
+                    locationInfo.textContent = "Geolocalizacao nao suportada.";
+                    return;
+                }
+
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject);
+                    });
+                    
+                    const { latitude, longitude } = position.coords;
+                    
+                    // Usar OpenStreetMap Nominatim para geocodificação inversa
+                    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    if (!geoResponse.ok) {
+                        throw new Error('Falha na geocodificacao inversa.');
+                    }
+                    
+                    const geoData = await geoResponse.json();
+                    const address = geoData.address;
+                    
+                    const city = address.city || address.town || address.village || "Desconhecida";
+                    const state = address.state || address.country || "";
+                    
+                    locationValue.textContent = city;
+                    locationInfo.textContent = state;
+
+                } catch (error) {
+                    console.error("Erro ao obter localizacao:", error);
+                    locationValue.textContent = "Indisponivel";
+                    if (error.code === 1) { // Utilizador negou a permissão
+                        locationInfo.textContent = "Permissao negada.";
+                    } else {
+                        locationInfo.textContent = "Nao foi possivel obter.";
+                    }
+                }
+            }
+            
             fetchData();
+            fetchLocation(); // Chamar a nova função de localização
             setInterval(fetchData, 20000);
         });
     </script>

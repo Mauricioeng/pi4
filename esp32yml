@@ -1,0 +1,365 @@
+// =================================================================================
+// ===      MONITOR AMBIENTAL V3.2 - COM SPLASH SCREEN                         ===
+// ===      - Adicionada tela de inicialização com logotipo                    ===
+// ===      - Múltiplas Telas com troca automática                             ===
+// ===      - Relógio e Calendário em Tempo Real (NTP)                         ===
+// ===      - Servidor Web para acesso via navegador                           ===
+// =================================================================================
+
+// --- Bibliotecas ---
+#include <WiFi.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include "DHT.h"
+#include <WebServer.h>
+#include "time.h"
+
+// --- Configurações de Wi-Fi e ThingSpeak ---
+const char* ssid = "Maurício 2.4";
+const char* password = "961960804m";
+const char* server_thingspeak = "api.thingspeak.com";
+String writeAPIKey = "ULAG2Z8HG9WR0HGB";
+
+// --- Configurações de Tempo (NTP) ---
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -3 * 3600; // Fuso de -3 horas para o Brasil
+const int   daylightOffset_sec = 0;
+
+// --- Configurações de Pinos e Display ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_RESET -1
+const int I2C_SDA_PIN = 21;
+const int I2C_SCL_PIN = 22;
+#define DHT_PIN 23
+#define DHT_TYPE DHT22
+#define GAS_SENSOR_PIN 35
+
+// --- Logotipo da Splash Screen (formato XBM, 100x42 pixels) ---
+static const unsigned char splash_logo[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x07, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70, 
+	0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 
+	0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 
+	0xc0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 
+	0xc0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 
+	0x70, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f, 
+	0x38, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 
+	0x1c, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfc, 
+	0x0f, 0xf0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xf8, 
+	0x07, 0xe0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xf8, 
+	0x03, 0xc0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0x80, 
+	0x01, 0x80, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x01, 
+	0x00, 0x01, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x7f, 
+	0xfc, 0xfe, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x7f, 
+	0xfc, 0xfe, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70, 0x01, 
+	0x00, 0x01, 0x1f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0x80, 
+	0x01, 0x80, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xf8, 
+	0x03, 0xc0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xf8, 
+	0x07, 0xe0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfc, 
+	0x0f, 0xf0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7e, 
+	0x1c, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f, 
+	0x38, 0x7c, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1e, 
+	0x70, 0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 
+	0xc0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c, 
+	0xc0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 
+	0x7f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x70, 
+	0x1e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 
+	0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+// --- Ícones Personalizados (formato XBM) ---
+static const unsigned char umidade_icon[] = {0x00,0x00,0x00,0x00,0x00,0x00,0x10,0x00,0x38,0x00,0x7C,0x00,0x7C,0x00,0xFE,0x00,0xFE,0x00,0xFE,0x00,0x7C,0x00,0x38,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+static const unsigned char temperatura_icon[] = {0x00,0x00,0x1C,0x00,0x1C,0x00,0x1C,0x00,0x1C,0x00,0x1C,0x00,0x1C,0x00,0x3E,0x00,0x3E,0x00,0x7F,0x00,0x7F,0x00,0x7F,0x00,0x3E,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+static const unsigned char ar_icon[] = {0x00,0x00,0x00,0x00,0x00,0x00,0x18,0x00,0x3C,0x00,0x7E,0x00,0xDC,0x00,0x98,0x00,0xB4,0x00,0x6C,0x00,0x7E,0x00,0x3C,0x00,0x18,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+
+// --- Objetos ---
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+DHT dht(DHT_PIN, DHT_TYPE);
+WebServer server(80);
+WiFiClient client;
+struct tm timeinfo;
+
+// --- Variáveis de Controle de Tempo e Estado ---
+unsigned long t_leitura = 0, t_envio = 0, t_reconnect = 0, t_troca_tela = 0;
+const long INT_LEITURA = 2500, INT_ENVIO = 20000, INT_RECONNECT = 30000, INT_TELA = 8000;
+float temperatura = 0.0, umidade = 0.0;
+int valorGas = 0;
+bool erroDHT = false;
+int telaAtual = 0;
+const int NUM_TELAS = 3;
+
+// --- Protótipos de Funções ---
+void setupWiFi();
+void configTime();
+void handleRoot();
+void handleNotFound();
+void lerSensores();
+void sendToThingSpeak();
+void atualizarDisplay();
+void drawScreenMain();
+void drawScreenAirQuality();
+void drawScreenSystem();
+void drawPagination();
+
+// =======================================================================
+// ===                             SETUP                               ===
+// =======================================================================
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
+  dht.begin();
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { Serial.println(F("Falha display")); while(1); }
+
+  // --- NOVA TELA DE SPLASH SCREEN ---
+  display.clearDisplay();
+  display.drawBitmap((SCREEN_WIDTH - 100) / 2, 5, splash_logo, 100, 42, SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(20, 52);
+  display.println("RADAR CIDADAO");
+  display.display();
+  delay(3500); // Mostra a splash screen por 3.5 segundos
+
+  // Continua com o setup normal...
+  setupWiFi();
+  configTime();
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.onNotFound(handleNotFound);
+  server.begin();
+  Serial.println("Servidor web iniciado!");
+}
+
+// =======================================================================
+// ===                              LOOP                               ===
+// =======================================================================
+void loop() {
+  server.handleClient(); // Processa requisições web
+  if (WiFi.status() != WL_CONNECTED && millis() - t_reconnect >= INT_RECONNECT) { WiFi.disconnect(); WiFi.reconnect(); t_reconnect = millis(); }
+  if (millis() - t_leitura >= INT_LEITURA) { lerSensores(); atualizarDisplay(); t_leitura = millis(); }
+  if (millis() - t_envio >= INT_ENVIO && WiFi.status() == WL_CONNECTED && !erroDHT) { sendToThingSpeak(); t_envio = millis(); }
+  if (millis() - t_troca_tela >= INT_TELA) { telaAtual = (telaAtual + 1) % NUM_TELAS; atualizarDisplay(); t_troca_tela = millis(); }
+}
+
+// ... O restante do código (funções de WiFi, Sensores, Web Server e Telas) permanece exatamente o mesmo ...
+// =======================================================================
+// ===                 FUNÇÕES DE CONECTIVIDADE E DADOS                ===
+// =======================================================================
+void setupWiFi() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 10);
+  display.println("Conectando ao WiFi...");
+  display.setCursor(0, 25);
+  display.print(ssid);
+  display.display();
+
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a ");
+  Serial.println(ssid);
+
+  int tentativas = 0;
+  while (WiFi.status() != WL_CONNECTED && tentativas < 20) {
+    delay(500);
+    Serial.print(".");
+    tentativas++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\nWiFi conectado!");
+    Serial.print("IP: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\nFalha ao conectar.");
+  }
+}
+
+void lerSensores() {
+  float temp_lida = dht.readTemperature();
+  float umid_lida = dht.readHumidity();
+
+  if (isnan(temp_lida) || isnan(umid_lida)) {
+    Serial.println("Erro ao ler o sensor DHT22!");
+    erroDHT = true;
+  } else {
+    erroDHT = false;
+    temperatura = temp_lida;
+    umidade = umid_lida;
+  }
+  
+  valorGas = analogRead(GAS_SENSOR_PIN);
+}
+
+void sendToThingSpeak() {
+  if (client.connect(server_thingspeak, 80)) {
+    Serial.println("Enviando dados para o ThingSpeak...");
+    String postStr = "GET /update?api_key=" + writeAPIKey;
+    postStr += "&field1=" + String(temperatura);
+    postStr += "&field2=" + String(umidade);
+    postStr += "&field3=" + String(valorGas);
+    postStr += " HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n";
+    
+    client.print(postStr);
+    Serial.println("Dados enviados.");
+    client.stop();
+  } else {
+    Serial.println("Conexao com ThingSpeak falhou.");
+    client.stop();
+  }
+}
+
+void configTime() {
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  Serial.print("Buscando hora");
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println(" Falha ao obter hora");
+    return;
+  }
+  Serial.println(" Hora configurada");
+}
+
+// =======================================================================
+// ===                  FUNÇÕES DO SERVIDOR WEB                        ===
+// =======================================================================
+void handleRoot() {
+  char temp_str[8], umid_str[8], gas_str[8];
+  dtostrf(temperatura, 4, 1, temp_str);
+  dtostrf(umidade, 4, 0, umid_str);
+  itoa(valorGas, gas_str, 10);
+
+  String html = "<!DOCTYPE html><html><head><title>Monitor Ambiental</title>";
+  html += "<meta http-equiv='refresh' content='10'>";
+  html += "<style>body{font-family:sans-serif; text-align:center; background-color:#f0f0f0;} h1{color:#333;} .card{background-color:white; padding:20px; margin:20px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1);}</style>";
+  html += "</head><body><h1>Monitor Ambiental ESP32</h1>";
+  html += "<div class='card'><h2>Temperatura: " + String(temp_str) + " &deg;C</h2></div>";
+  html += "<div class='card'><h2>Umidade: " + String(umid_str) + " %</h2></div>";
+  html += "<div class='card'><h2>Qualidade do Ar (bruto): " + String(gas_str) + "</h2></div>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleNotFound() {
+  server.send(404, "text/plain", "404: Nao encontrado");
+}
+
+// =======================================================================
+// ===                   FUNÇÕES DE DISPLAY (UI/UX)                    ===
+// =======================================================================
+void atualizarDisplay() {
+  if (erroDHT) {
+    display.clearDisplay(); display.setTextSize(2); display.setCursor(5, 15);
+    display.println("ERRO DHT"); display.setTextSize(1); display.setCursor(5, 40);
+    display.println("Verifique a fiacao!"); display.display();
+    return;
+  }
+  display.clearDisplay();
+  switch (telaAtual) {
+    case 0: drawScreenMain(); break;
+    case 1: drawScreenAirQuality(); break;
+    case 2: drawScreenSystem(); break;
+  }
+  drawPagination();
+  display.display();
+}
+
+void drawScreenMain() {
+  // Hora e Data
+  if(getLocalTime(&timeinfo)){
+    char timeStr[9];
+    strftime(timeStr, sizeof(timeStr), "%H:%M:%S", &timeinfo);
+    display.setTextSize(2);
+    display.setCursor(20, 0);
+    display.println(timeStr);
+
+    char dateStr[11];
+    strftime(dateStr, sizeof(dateStr), "%d/%m/%Y", &timeinfo);
+    display.setTextSize(1);
+    display.setCursor(34, 20);
+    display.println(dateStr);
+  }
+
+  display.drawLine(0, 34, 128, 34, SSD1306_WHITE);
+
+  // Temperatura e Umidade
+  display.drawBitmap(2, 42, temperatura_icon, 16, 16, 1);
+  display.setTextSize(2);
+  display.setCursor(22, 42);
+  display.print(temperatura, 1);
+  
+  display.drawBitmap(74, 42, umidade_icon, 16, 16, 1);
+  display.setCursor(94, 42);
+  display.print((int)umidade);
+}
+
+void drawScreenAirQuality() {
+  display.setTextSize(2);
+  display.setCursor(5, 0);
+  display.println("Qual. Ar");
+  
+  display.drawBitmap(5, 25, ar_icon, 16, 16, 1);
+  display.setTextSize(1);
+  display.setCursor(25, 25);
+  String arStatus = "BOM";
+  if (valorGas >= 1500) arStatus = "RUIM";
+  else if (valorGas >= 700) arStatus = "MODERADO";
+  display.println(arStatus);
+
+  display.setCursor(25, 35);
+  display.print("Valor: ");
+  display.print(valorGas);
+
+  // Barra de progresso
+  int barWidth = map(valorGas, 0, 4095, 0, 126);
+  if (barWidth > 126) barWidth = 126;
+  display.drawRect(0, 52, 128, 10, SSD1306_WHITE);
+  display.fillRect(1, 53, barWidth, 8, SSD1306_WHITE);
+}
+
+void drawScreenSystem() {
+  display.setTextSize(2);
+  display.setCursor(5, 0);
+  display.println("Sistema");
+  
+  display.setTextSize(1);
+  display.setCursor(0, 20);
+  display.print("SSID: ");
+  display.println(ssid);
+  
+  display.setCursor(0, 32);
+  display.print("IP: ");
+  display.println(WiFi.localIP());
+
+  display.setCursor(0, 44);
+  display.print("Sinal: ");
+  display.print(WiFi.RSSI());
+  display.println(" dBm");
+}
+
+void drawPagination() {
+  for (int i = 0; i < NUM_TELAS; i++) {
+    int x = 55 + (i * 8);
+    if (i == telaAtual) {
+      display.fillCircle(x, 62, 2, SSD1306_WHITE);
+    } else {
+      display.drawCircle(x, 62, 2, SSD1306_WHITE);
+    }
+  }
+}

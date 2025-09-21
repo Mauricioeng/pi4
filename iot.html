@@ -1,65 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <title>Radar Cidadao - ESP32</title>
+    <title>Radar Cidadão - Análise Ambiental</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* --- ANIMAÇÕES (NOVO) --- */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        /* --- ANIMAÇÕES --- */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
 
         /* --- ESTILOS GERAIS --- */
-        body { font-family: 'Roboto', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: 'Roboto', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 15px; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
         .container { width: 100%; max-width: 600px; text-align: center; }
         h1 { color: #2c3e50; margin-bottom: 5px; animation: fadeIn 0.8s ease-out; }
         p.subtitle { color: #7f8c8d; margin-top: 0; margin-bottom: 20px; animation: fadeIn 0.8s ease-out 0.2s; }
         
+        /* Estilo base para todos os containers */
+        .content-box {
+            background-color: white; padding: 20px; border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
+            text-align: left; opacity: 0; animation: fadeInUp 0.5s ease-out forwards;
+        }
+
         /* --- ESTILOS DOS CARTÕES DE DADOS --- */
         .card-deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background-color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
-        /* Atraso na animação para cada card */
+        .card { background-color: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); animation: fadeInUp 0.5s ease-out forwards; opacity: 0; position: relative; text-align: center; }
         .card:nth-child(1) { animation-delay: 0.3s; }
         .card:nth-child(2) { animation-delay: 0.4s; }
         .card:nth-child(3) { animation-delay: 0.5s; }
         .card:nth-child(4) { animation-delay: 0.6s; }
-
         .card h2 { margin: 0 0 10px; font-size: 1.1em; color: #34495e; }
         .card .value { font-size: 2.2em; font-weight: 700; margin: 0; line-height: 1; animation: pulse 1.5s ease-in-out; }
         .temp .value { color: #e67e22; }
         .umid .value { color: #3498db; }
         .ar .value { color: #27ae60; }
+        .ar.clickable { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .ar.clickable:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
         .location .value { color: #1abc9c; font-size: 1.8em; }
         .card .info { font-size: 0.9em; color: #7f8c8d; margin-top: 5px; }
 
-        /* --- DECLARAÇÃO DE MISSÃO --- */
-        .mission-statement {
-            background-color: white; padding: 20px; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;
-            border-left: 5px solid #1abc9c; text-align: left;
-            opacity: 0; animation: fadeInUp 0.5s ease-out 0.7s forwards;
-        }
-        .mission-statement p { margin: 10px 0; line-height: 1.6; color: #34495e; }
-        .mission-statement strong { color: #2c3e50; }
-        .mission-statement .future { font-style: italic; color: #7f8c8d; font-size: 0.9em; }
-        
-        /* --- RODAPÉ --- */
-        .footer-card { background: linear-gradient(45deg, #34495e, #2c3e50); color: white; padding: 15px; border-radius: 12px; font-size: 1.1em; font-weight: 300; box-shadow: 0 4px 15px rgba(0,0,0,0.1); opacity: 0; animation: fadeInUp 0.5s ease-out 0.8s forwards; }
-        .footer-card p { margin: 0; }
+        /* --- GRÁFICO --- */
+        .chart-container { animation-delay: 0.7s; }
+        .chart-container h2 { margin-top: 0; color: #2c3e50; font-size: 1.3em; }
 
-        /* --- MENU FLUTUANTE --- */
+        /* --- RECOMENDAÇÕES DE SAÚDE --- */
+        .recommendations-container { animation-delay: 0.8s; }
+        .recommendations-container h2 { margin-top: 0; color: #2c3e50; font-size: 1.3em; }
+        .recommendations-container ul { padding-left: 0; list-style: none; margin: 0; }
+        .recommendations-container li { margin-bottom: 10px; padding-left: 25px; position: relative; }
+        .recommendations-container li::before { content: '✓'; position: absolute; left: 0; font-weight: bold; }
+        .recommendations-container li.good::before { color: #27ae60; }
+        .recommendations-container li.warning::before { content: '!'; color: #e67e22; }
+        .recommendations-container li.alert::before { content: '⚠'; color: #e74c3c; }
+
+        /* --- TABELA DE HISTÓRICO --- */
+        .history-container { animation-delay: 0.9s; }
+        .history-container h2 { margin-top: 0; color: #2c3e50; font-size: 1.3em; }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th, .history-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+        .history-table th { font-size: 0.9em; color: #7f8c8d; }
+        .history-table td { font-size: 0.95em; color: #34495e; }
+        .history-table tr:last-child td { border-bottom: none; }
+
+        /* --- JANELA MODAL/POP-UP --- */
+        .modal { display: none; position: fixed; z-index: 1002; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); position: relative; animation: fadeInUp 0.4s; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover, .close-btn:focus { color: #000; }
+
+        /* --- RODAPÉ --- */
+        .footer-card { text-align: center; background: linear-gradient(45deg, #34495e, #2c3e50); color: white; animation-delay: 1s; }
+
+        /* --- MENU FLUTUANTE INTELIGENTE --- */
         #menuToggle {
             position: fixed; top: 20px; left: 20px; z-index: 1001;
             width: 50px; height: 50px; background: rgba(44, 62, 80, 0.7);
@@ -94,7 +109,6 @@
     </style>
 </head>
 <body>
-    <!-- Botão e Menu Flutuante -->
     <button id="menuToggle">
         <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -103,57 +117,70 @@
     </button>
     <nav class="side-menu" id="sideMenu">
         <ul>
-            <li><a href="#" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
-            <li><a href="inoformes.html" title="Informes"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg><span class="tooltip">Visão IOT</span></a></li>
-            <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z"/>
-        <path d="M12 11h7"/>
-        <path d="M12 12a1 1 0 1 0 0-2a1 1 0 0 0 0 2z"/>
-        <path d="M16 16l-3-3"/>
-    </svg><span class="tooltip">Radar Cidadão</span></a></li>
+            <li><a href="dashboard.html" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
+            <li><a href="informes.html" title="Informes"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M12 4v10"/><path d="M12 4a2 2 0 1 0-4 0v10a2 2 0 1 0 4 0Z"/><path d="M12 4a2 2 0 1 1 4 0v10a2 2 0 1 1-4 0Z"/></svg><span class="tooltip">Informes</span></a></li>
+            <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20z"/><path d="M12 11h7"/><path d="M12 12a1 1 0 1 0 0-2a1 1 0 0 0 0 2z"/><path d="M16 16l-3-3"/></svg><span class="tooltip">Radar Cidadão</span></a></li>
         </ul>
     </nav>
 
-    <!-- Conteúdo Principal -->
     <div class="container">
-        <h1>Radar Cidadao</h1>
-        <p class="subtitle">Monitorizacao Ambiental Colaborativa</p>
+        <h1>Radar Cidadão</h1>
+        <p class="subtitle">Análise Ambiental e Recomendações de Saúde</p>
+        
         <div class="card-deck">
-            <div class="card temp">
-                <h2>Temperatura</h2>
-                <p class="value" id="temp-value">-- &deg;C</p>
-            </div>
-            <div class="card umid">
-                <h2>Humidade</h2>
-                <p class="value" id="umid-value">-- %</p>
-            </div>
-            <div class="card ar">
-                <h2>Qualidade do Ar</h2>
-                <p class="value" id="ar-value">--</p>
-                <p class="info" id="ar-info">(Ideal: < 1000)</p>
-            </div>
-            <div class="card location">
-                <h2>Localização</h2>
-                <p class="value">Caieiras</p>
-                <p class="info">São Paulo, BR</p>
-            </div>
+            <div class="card temp"><h2>Temperatura</h2><p class="value" id="temp-value">-- &deg;C</p></div>
+            <div class="card umid"><h2>Umidade</h2><p class="value" id="umid-value">-- %</p></div>
+            <div id="air-quality-card" class="card ar clickable"><h2>Qualidade do Ar</h2><p class="value" id="ar-value">--</p><p class="info" id="ar-info">(Clique para saber mais)</p></div>
+            <div class="card location"><h2>Localização</h2><p class="value">Caieiras</p><p class="info">São Paulo, BR</p></div>
         </div>
 
-        <!-- Secção de Destaque Adicionada -->
-        <div class="mission-statement">
-            <p><strong>A análise do microclima é fundamental para a saúde.</strong> Este dispositivo é uma ferramenta poderosa para visualizar gases poluentes e compreender o clima tenso da nossa cidade com a poluição.</p>
-            <p>Tendo em vista a necessidade do munícipe, iremos até ele para compreender com análise fundamental e encaminhar os dados para órgãos públicos para providências.</p>
-            <p class="future"><strong>Em breve:</strong> Dados para medir ruído de vizinhos com som alto e o fluxo de veículos nas ruas (desenvolvimento pendente).</p>
+        <div class="content-box chart-container">
+            <h2>Histórico de Variações</h2>
+            <canvas id="enviroChart"></canvas>
         </div>
 
-        <div class="footer-card">
-            <p id="status-text">A carregar dados...</p>
+        <div class="content-box recommendations-container">
+            <h2>Recomendações de Saúde (Dados Atuais)</h2>
+            <ul id="health-recommendations">
+                </ul>
+        </div>
+
+        <div class="content-box history-container">
+            <h2>Últimas Medições (Dados Brutos)</h2>
+            <table class="history-table">
+                <thead><tr><th>Horário</th><th>Temp.</th><th>Umid.</th><th>Ar (ppm)</th></tr></thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+
+        <div class="content-box footer-card">
+            <p id="status-text">Aguardando dados...</p>
+        </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h3>Impactos na Saúde e no Ambiente</h3>
+            <p>A monitorização de gases e temperatura é vital para entender os riscos à nossa volta.</p>
+            
+            <strong>Efeitos das Altas Temperaturas:</strong>
+            <ul>
+                <li><strong>No corpo humano:</strong> Pode causar desidratação, insolação, exaustão pelo calor e agravar condições cardiovasculares e respiratórias.</li>
+                <li><strong>Causas comuns:</strong> Ilhas de calor urbanas (excesso de asfalto e concreto), desmatamento e mudanças climáticas globais.</li>
+            </ul>
+
+            <strong>Efeitos dos Gases Poluentes (CO, CO₂, GLP):</strong>
+            <ul>
+                <li><strong>No corpo humano:</strong> A inalação pode causar dores de cabeça, tontura, irritação nos olhos e vias respiratórias. Em altas concentrações, pode levar à asfixia e intoxicação.</li>
+                <li><strong>Causas comuns:</strong> Queima de combustíveis fósseis (veículos e indústrias), queimadas e vazamentos de gás doméstico ou industrial.</li>
+            </ul>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- LÓGICA DO MENU FLUTUANTE ---
+            // --- LÓGICA DO MENU FLUTUANTE INTELIGENTE ---
             const menuToggle = document.getElementById('menuToggle');
             const sideMenu = document.getElementById('sideMenu');
             let menuTimeout;
@@ -163,55 +190,171 @@
                 sideMenu.classList.toggle('show');
                 menuToggle.classList.toggle('active');
 
-                // Esconde o menu se ele estiver visível
                 if (sideMenu.classList.contains('show')) {
                     menuTimeout = setTimeout(() => {
                         sideMenu.classList.remove('show');
                         menuToggle.classList.remove('active');
-                    }, 4000); // Aumentei o tempo para 4 segundos
+                    }, 4000); // Menu se recolhe após 4 segundos
                 }
             });
+
+            // --- LÓGICA DO MODAL ---
+            const modal = document.getElementById("infoModal");
+            const airQualityCard = document.getElementById("air-quality-card");
+            const closeBtn = document.querySelector(".close-btn");
+
+            airQualityCard.onclick = () => { modal.style.display = "block"; }
+            closeBtn.onclick = () => { modal.style.display = "none"; }
+            window.onclick = (event) => {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
 
             // --- LÓGICA DE BUSCA DE DADOS (THINGSPEAK) ---
             const channelID = "3074356";
             const readAPIKey = "V8OA94S2WPFW797S";
-            const thingSpeakURL = `https://api.thingspeak.com/channels/${channelID}/feeds/last.json?api_key=${readAPIKey}`;
+            const lastDataURL = `https://api.thingspeak.com/channels/${channelID}/feeds/last.json?api_key=${readAPIKey}`;
+            const historyURL = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readAPIKey}&results=15`;
 
-            async function fetchData() {
+            let enviroChart = null; 
+
+            async function fetchLastData() {
                 try {
-                    const response = await fetch(thingSpeakURL);
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                    const response = await fetch(lastDataURL);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const data = await response.json();
 
-                    if (data.field1) {
-                        document.getElementById('temp-value').innerHTML = `${parseFloat(data.field1).toFixed(1)} &deg;C`;
-                    }
-                    if (data.field2) {
-                        document.getElementById('umid-value').innerHTML = `${parseFloat(data.field2).toFixed(0)} %`;
-                    }
-                    if (data.field3) {
-                        const airQuality = parseInt(data.field3);
-                        document.getElementById('ar-value').textContent = airQuality;
+                    const temp = data.field1 ? parseFloat(data.field1) : null;
+                    const umid = data.field2 ? parseFloat(data.field2) : null;
+                    const ar = data.field3 ? parseInt(data.field3) : null;
+
+                    if (temp !== null) document.getElementById('temp-value').innerHTML = `${temp.toFixed(1)} &deg;C`;
+                    if (umid !== null) document.getElementById('umid-value').innerHTML = `${umid.toFixed(0)} %`;
+                    if (ar !== null) {
+                        document.getElementById('ar-value').textContent = ar;
                         let airQualityText = "RUIM";
-                        if (airQuality < 1000) airQualityText = "BOM";
-                        else if (airQuality < 2000) airQualityText = "MODERADO";
+                        if (ar < 1000) airQualityText = "BOM";
+                        else if (ar < 2000) airQualityText = "MODERADO";
                         document.getElementById('ar-info').textContent = `${airQualityText} (Ideal: < 1000)`;
                     }
 
+                    updateHealthRecommendations(temp, umid, ar);
+
                     const lastUpdate = new Date(data.created_at).toLocaleString('pt-BR');
-                    document.getElementById('status-text').textContent = `Ultima atualizacao: ${lastUpdate}`;
+                    document.getElementById('status-text').textContent = `Última atualização: ${lastUpdate}`;
                 } catch (error) {
-                    console.error("Erro ao buscar dados do ThingSpeak:", error);
+                    console.error("Erro ao buscar último dado:", error);
                     document.getElementById('status-text').textContent = "Erro ao carregar dados.";
                 }
             }
 
-            fetchData();
-            setInterval(fetchData, 20000);
+            async function fetchHistory() {
+                try {
+                    const response = await fetch(historyURL);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const data = await response.json();
+                    
+                    updateHistoryTable(data.feeds);
+                    renderChart(data.feeds);
+                } catch (error) {
+                    console.error("Erro ao buscar histórico:", error);
+                }
+            }
+            
+            function updateHistoryTable(feeds) {
+                const historyBody = document.getElementById('history-body');
+                historyBody.innerHTML = '';
+                feeds.slice(0, 5).forEach(feed => {
+                    const row = document.createElement('tr');
+                    const time = new Date(feed.created_at).toLocaleTimeString('pt-BR');
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td>${feed.field1 ? parseFloat(feed.field1).toFixed(1) + ' &deg;C' : '--'}</td>
+                        <td>${feed.field2 ? parseFloat(feed.field2).toFixed(0) + ' %' : '--'}</td>
+                        <td>${feed.field3 || '--'}</td>
+                    `;
+                    historyBody.appendChild(row);
+                });
+            }
+
+            function renderChart(feeds) {
+                const ctx = document.getElementById('enviroChart').getContext('2d');
+                
+                const labels = feeds.map(feed => new Date(feed.created_at).toLocaleTimeString('pt-BR'));
+                const tempData = feeds.map(feed => feed.field1 ? parseFloat(feed.field1) : null);
+                const umidData = feeds.map(feed => feed.field2 ? parseFloat(feed.field2) : null);
+                const arData = feeds.map(feed => feed.field3 ? parseInt(feed.field3) : null);
+
+                if (enviroChart) {
+                    enviroChart.destroy();
+                }
+
+                enviroChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Temperatura (°C)', data: tempData, borderColor: '#e67e22', backgroundColor: 'rgba(230, 126, 34, 0.1)', tension: 0.3, fill: true },
+                            { label: 'Umidade (%)', data: umidData, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', tension: 0.3, fill: true },
+                            { label: 'Qualidade do Ar (ppm)', data: arData, borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)', tension: 0.3, fill: true, yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, position: 'left', title: { display: true, text: '°C / %' } },
+                            y1: { beginAtZero: true, position: 'right', title: { display: true, text: 'ppm' }, grid: { drawOnChartArea: false } }
+                        }
+                    }
+                });
+            }
+
+            function updateHealthRecommendations(temp, umid, ar) {
+                const recommendationList = document.getElementById('health-recommendations');
+                recommendationList.innerHTML = '';
+                let recommendations = [];
+
+                if (temp > 30) {
+                    recommendations.push({ class: 'alert', text: '<strong>Temperatura Elevada:</strong> Beba bastante água, evite sol intenso e procure locais arejados.' });
+                } else if (temp < 15) {
+                    recommendations.push({ class: 'warning', text: '<strong>Temperatura Baixa:</strong> Agasalhe-se bem para evitar problemas respiratórios.' });
+                } else {
+                    recommendations.push({ class: 'good', text: '<strong>Temperatura Agradável:</strong> Condições ideais para atividades externas.' });
+                }
+
+                if (ar > 2000) {
+                    recommendations.push({ class: 'alert', text: '<strong>Qualidade do Ar Péssima:</strong> Ventile o ambiente imediatamente! Risco de dores de cabeça e sonolência.' });
+                } else if (ar > 1000) {
+                    recommendations.push({ class: 'warning', text: '<strong>Qualidade do Ar Ruim:</strong> Aumente a ventilação do local. Pessoas sensíveis podem sentir desconforto.' });
+                } else {
+                    recommendations.push({ class: 'good', text: '<strong>Qualidade do Ar Boa:</strong> Níveis seguros para permanência e respiração.' });
+                }
+
+                if (umid > 70) {
+                    recommendations.push({ class: 'warning', text: '<strong>Umidade Alta:</strong> Ambiente propício para mofo e ácaros. Considere usar um desumidificador.' });
+                } else if (umid < 30) {
+                    recommendations.push({ class: 'warning', text: '<strong>Ar Seco (Umidade Baixa):</strong> Pode causar ressecamento das vias aéreas. Hidrate-se e use umidificadores.' });
+                } else {
+                    recommendations.push({ class: 'good', text: '<strong>Umidade Confortável:</strong> Níveis ideais para a saúde respiratória.' });
+                }
+
+                recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.className = rec.class;
+                    li.innerHTML = rec.text;
+                    recommendationList.appendChild(li);
+                });
+            }
+
+            function updateAllData() {
+                fetchLastData();
+                fetchHistory();
+            }
+
+            updateAllData();
+            setInterval(updateAllData, 20000);
         });
     </script>
 </body>
 </html>
-

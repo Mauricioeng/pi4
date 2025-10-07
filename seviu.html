@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Se Viu? | Radar Cidadão</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <style>
+    /* --- CONFIGURAÇÕES GLOBAIS E PALETA DE CORES (DO RADAR CIDADÃO) --- */
+    :root {
+      --primary-color: #0093E9;
+      --gradient-start: #0093E9;
+      --gradient-end: #80D0C7;
+      --background-color: #f0f4f8;
+      --card-background-color: #ffffff;
+      --text-color: #2c3e50;
+      --muted-text-color: #7f8c8d;
+      --input-background-color: #f7f9fc;
+      --progress-background: #e0e7ee;
+      --border-color: #dce4ec;
+      --success-color: #27ae60;
+      --danger-color: #e74c3c;
+    }
+
+    body {
+      background-color: var(--background-color);
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* --- ESTILOS DO MENU FLUTUANTE (DO RADAR CIDADÃO) --- */
+    #menuToggle {
+        position: fixed; top: 20px; left: 20px; z-index: 1051; /* z-index maior que o do modal */
+        width: 50px; height: 50px; background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.7); border-radius: 50%;
+        cursor: pointer; display: flex; justify-content: center; align-items: center; 
+        transition: all 0.3s ease-in-out; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    #menuToggle:hover { background: rgba(255,255,255,0.8); transform: scale(1.05); }
+    .menu-icon { width: 26px; height: 26px; stroke: var(--text-color); stroke-width: 2.5; stroke-linecap: round; transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1); }
+    #menuToggle.active .menu-icon { transform: rotate(45deg); }
+    .side-menu {
+        position: fixed; top: 85px; left: 20px; z-index: 1050;
+        display: flex; flex-direction: column; gap: 10px; background: rgba(255, 255, 255, 0.5);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        padding: 10px; border-radius: 20px; opacity: 0; transform: translateY(-20px) scale(0.95);
+        pointer-events: none; transition: transform 0.3s cubic-bezier(0.2, 1, 0.4, 1), opacity 0.3s;
+        border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .side-menu.show { transform: translateY(0) scale(1); opacity:1; pointer-events: auto; }
+    .side-menu ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .side-menu a { color: var(--text-color); text-decoration: none; display: flex; justify-content: center; align-items: center; position: relative; width: 50px; height: 50px; border-radius: 50%; transition: background-color 0.2s; }
+    .side-menu a:hover { background-color: rgba(0, 147, 233, 0.1); }
+    .side-menu svg { width:24px; height:24px; }
+    .side-menu .tooltip { position: absolute; left: 115%; background-color: var(--text-color); color: white; padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 500; white-space: nowrap; opacity: 0; visibility: hidden; transform: translateX(-10px); transition: all 0.3s ease; pointer-events: none; }
+    .side-menu a:hover .tooltip { opacity:1; visibility:visible; transform:translateX(0); }
+
+    /* --- ESTILOS ESPECÍFICOS DA PÁGINA "SE VIU?" --- */
+    .profile-card {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 8px 30px rgba(44, 62, 80, 0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(44, 62, 80, 0.12);
+    }
+    .profile-card-img {
+        height: 250px;
+        object-fit: cover;
+        object-position: center top; /* Foca no rosto */
+    }
+    .profile-card .badge {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        font-size: 0.8rem;
+    }
+    .btn-primary { 
+      background-image: linear-gradient(45deg, var(--gradient-start) 0%, var(--gradient-end) 100%); 
+      border: none;
+    }
+    
+    /* --- ESTILOS DO COMPARADOR DE IMAGENS (IA) --- */
+    .age-progression-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 1rem auto;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 2px solid var(--border-color);
+    }
+    .image-comparison {
+      position: relative;
+      width: 100%;
+      padding-bottom: 100%; /* Aspect ratio 1:1 */
+      height: 0;
+    }
+    .image-comparison img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .image-comparison .after-image {
+      clip-path: inset(0 50% 0 0);
+    }
+    .comparison-slider {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      cursor: ew-resize;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    .comparison-slider::after {
+      content: '\2194';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+    }
+    .slider-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: ew-resize;
+    }
+    
+    #map {
+        height: 250px;
+        width: 100%;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    .modal-lg { max-width: 800px; }
+  </style>
+</head>
+<body>
+
+  <button id="menuToggle">
+    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+    </svg>
+  </button>
+  <nav class="side-menu" id="sideMenu">
+    <ul>
+        <li><a href="dashboard.html" title="Dashboard"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8a6 6 0 0 0-6-6"/><path d="M13 8a2 2 0 0 0-2-2"/></svg><span class="tooltip">Dashboard</span></a></li>
+        <li><a href="index.html" title="Radar Cidadão"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-bullseye" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M8 13A5 5 0 1 1 8 3a5 5 0 0 1 0 10zm0 1A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"/><path d="M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M9.5 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg><span class="tooltip">Radar</span></a></li>
+    </ul>
+  </nav>
+
+  <div class="container my-5">
+    <div class="text-center mb-5">
+      <h1 class="display-4 fw-bold" style="color: var(--text-color);">Se Viu?</h1>
+      <p class="lead" style="color: var(--muted-text-color);">Ajude a encontrar quem está fazendo falta. Cada informação é valiosa.</p>
+      </div>
+
+    <div class="row g-4" id="missing-persons-grid">
+      </div>
+  </div>
+
+  <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 1rem; border: none;">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fs-4 fw-bold" id="detailModalLabel"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-lg-6">
+              <h6 class="fw-bold text-center mb-2" style="color: var(--primary-color);">IA: Progressão de Idade</h6>
+              <div class="age-progression-container">
+                  <div class="image-comparison">
+                      <img src="" class="before-image" alt="Foto Original">
+                      <img src="" class="after-image" alt="Projeção IA">
+                  </div>
+                  <div class="comparison-slider"></div>
+                  <input type="range" min="0" max="100" value="50" class="slider-input" aria-label="Image Comparison Slider">
+              </div>
+              <div class="d-flex justify-content-between mt-1 px-2">
+                  <small class="fw-bold">Original</small>
+                  <small class="fw-bold">Projeção Atual</small>
+              </div>
+            </div>
+            <div class="col-lg-6 mt-4 mt-lg-0">
+              <h6 class="fw-bold" style="color: var(--primary-color);">Detalhes</h6>
+              <dl class="row" id="person-details-list">
+                </dl>
+              
+              <h6 class="fw-bold mt-3" style="color: var(--primary-color);">Última Localização Conhecida</h6>
+              <div id="map"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reportModal">
+             <i class="bi bi-eye-fill me-2"></i>Eu vi essa pessoa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius: 1rem;">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reportModalLabel">Enviar Informação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted">Sua informação é anônima e será enviada diretamente às autoridades competentes. Agradecemos sua colaboração.</p>
+          <form id="reportForm">
+            <div class="mb-3">
+              <label for="reportLocation" class="form-label">Onde você viu?</label>
+              <input type="text" class="form-control" id="reportLocation" required>
+            </div>
+            <div class="mb-3">
+              <label for="reportDateTime" class="form-label">Quando?</label>
+              <input type="datetime-local" class="form-control" id="reportDateTime" required>
+            </div>
+            <div class="mb-3">
+              <label for="reportDescription" class="form-label">Descreva a situação</label>
+              <textarea class="form-control" id="reportDescription" rows="3"></textarea>
+            </div>
+             <div class="mb-3">
+              <label for="reportContact" class="form-label">Seu contato (Opcional)</label>
+              <input type="text" class="form-control" id="reportContact" placeholder="E-mail ou Telefone">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="reportForm" class="btn btn-primary">Enviar Informação</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // --- LÓGICA DO MENU FLUTUANTE (DO RADAR CIDADÃO) ---
+      const menuToggle = document.getElementById('menuToggle');
+      const sideMenu = document.getElementById('sideMenu');
+      if (menuToggle && sideMenu) {
+        let menuTimeout;
+        menuToggle.addEventListener('click', () => {
+          clearTimeout(menuTimeout);
+          sideMenu.classList.toggle('show');
+          menuToggle.classList.toggle('active');
+          menuTimeout = setTimeout(() => {
+            sideMenu.classList.remove('show');
+            menuToggle.classList.remove('active');
+          }, 4000);
+        });
+      }
+
+      // --- DADOS DAS PESSOAS DESAPARECIDAS (EXEMPLO) ---
+      const missingPersonsData = [
+        {
+          id: 1,
+          name: 'Felipe Marques Rodrigues',
+          status: 'Desaparecido',
+          age: 37,
+          disappearedDate: '21/09/2025',
+          lastSeen: 'Caieiras, SP',
+          photo_original: 'https://i.postimg.cc/cLwN9Crq/Screenshot-from-2025-10-07-19-17-33.png',
+          photo_ai: 'https://sdmntprwestus.oaiusercontent.com/files/00000000-4320-6230-8ab7-be684534b4ba/raw?se=2025-10-07T23%3A29%3A41Z&sp=r&sv=2024-08-04&sr=b&scid=c4aa24ac-35b6-5e72-aba7-19ce390223c1&skoid=f71d6506-3cac-498e-b62a-67f9228033a9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-10-07T22%3A19%3A23Z&ske=2025-10-08T22%3A19%3A23Z&sks=b&skv=2024-08-04&sig=3af8CuwVkJDwXtzj0teDoOlo6kr2ttU8jha199IOYMA%3D',
+          details: {
+            'Altura': '1,90',
+            'Cabelo': 'Preto, curto',
+            'Olhos': 'Castanhos',   
+            'Vestia': 'Regata branca, bermuda e Chinelo.',
+            'Circunstâncias': 'Visto pela última vez pela rua João Pacheco, Serpa. Entrar em contato (11) 95461-2345'
+          },
+          coords: [-23.35377097480127, -46.74673518484194] // Lat, Lng de São Paulo
+        },
+        {
+          id: 2,
+          name: 'Tony Alves Epifanio',
+          status: 'Desaparecido',
+          age: 45,
+          disappearedDate: '17/01/2025',
+          lastSeen: 'Ribeirão preto, SP',
+          photo_original: 'https://i.postimg.cc/MZ9PwShn/Screenshot-from-2025-10-07-19-46-22.png',
+          photo_ai: 'https://sdmntprwestus2.oaiusercontent.com/files/00000000-81a4-61f8-ab2c-eea0d7adb884/raw?se=2025-10-07T23%3A49%3A42Z&sp=r&sv=2024-08-04&sr=b&scid=906a1d4a-fcf2-52e3-9f78-e44e8664a8e7&skoid=f71d6506-3cac-498e-b62a-67f9228033a9&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-10-07T22%3A19%3A15Z&ske=2025-10-08T22%3A19%3A15Z&sks=b&skv=2024-08-04&sig=AhJoNrGNkAM0NdggY8aMkB4ZZ/p3kaYSr7WdCKWGg2U%3D',
+          details: {
+            'Altura': 'alta',
+            'Cabelo': 'preto',
+            'Olhos': 'Castanhos',
+            'Vestia': '.',
+            'Circunstâncias': 'Toni saiu de casa, no bairro Vila Virgínia, em Ribeirão Preto. Entrar em contato (11) 95461-2345'
+          },
+          coords: [-21.17901042353557, -47.823993612744665] // 
+        },
+      
+      ];
+
+      const grid = document.getElementById('missing-persons-grid');
+      const detailModalElement = document.getElementById('detailModal');
+      const detailModal = new bootstrap.Modal(detailModalElement);
+      let map; // Variável global para o mapa
+
+      // Função para renderizar os cartões na página inicial
+      function renderGrid() {
+        grid.innerHTML = '';
+        missingPersonsData.forEach(person => {
+          const cardHTML = `
+            <div class="col-md-6 col-lg-4">
+              <div class="card profile-card" data-id="${person.id}">
+                <img src="${person.photo_original}" class="card-img-top profile-card-img" alt="Foto de ${person.name}">
+                <span class="badge bg-danger">${person.status}</span>
+                <div class="card-body">
+                  <h5 class="card-title fw-bold">${person.name}</h5>
+                  <p class="card-text text-muted mb-1">
+                    <i class="bi bi-person me-2"></i>Idade (na época): ${person.age} anos
+                  </p>
+                  <p class="card-text text-muted mb-1">
+                     <i class="bi bi-calendar-x me-2"></i>Desde: ${person.disappearedDate}
+                  </p>
+                  <p class="card-text text-muted">
+                    <i class="bi bi-geo-alt-fill me-2"></i>Local: ${person.lastSeen}
+                  </p>
+                </div>
+              </div>
+            </div>
+          `;
+          grid.innerHTML += cardHTML;
+        });
+      }
+
+      // Função para popular o modal com os dados da pessoa selecionada
+      function populateModal(personId) {
+        const person = missingPersonsData.find(p => p.id == personId);
+        if (!person) return;
+
+        detailModalElement.querySelector('#detailModalLabel').textContent = person.name;
+        detailModalElement.querySelector('.before-image').src = person.photo_original;
+        detailModalElement.querySelector('.after-image').src = person.photo_ai;
+
+        const detailsList = detailModalElement.querySelector('#person-details-list');
+        detailsList.innerHTML = '';
+        for (const [key, value] of Object.entries(person.details)) {
+          detailsList.innerHTML += `<dt class="col-sm-4">${key}</dt><dd class="col-sm-8">${value}</dd>`;
+        }
+        
+        // Inicializa ou atualiza o mapa
+        if (map) {
+            map.remove();
+        }
+        map = L.map('map').setView(person.coords, 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker(person.coords).addTo(map)
+            .bindPopup(`<b>${person.name}</b><br>Visto por último aqui.`)
+            .openPopup();
+      }
+
+      // Lógica do slider de comparação de imagens
+      const slider = detailModalElement.querySelector('.slider-input');
+      slider.addEventListener('input', (e) => {
+          const afterImage = detailModalElement.querySelector('.after-image');
+          const sliderLine = detailModalElement.querySelector('.comparison-slider');
+          afterImage.style.clipPath = `inset(0 ${100 - e.target.value}% 0 0)`;
+          sliderLine.style.left = `${e.target.value}%`;
+      });
+
+      // Adiciona o evento de clique ao grid (delegação de evento)
+      grid.addEventListener('click', (e) => {
+        const card = e.target.closest('.profile-card');
+        if (card) {
+          const personId = card.dataset.id;
+          populateModal(personId);
+          detailModal.show();
+        }
+      });
+      
+      // Forçar o mapa a renderizar corretamente quando o modal é exibido
+      detailModalElement.addEventListener('shown.bs.modal', () => {
+          setTimeout(() => {
+              map.invalidateSize();
+          }, 10);
+      });
+      
+      // Lógica do formulário de envio de informação
+      const reportForm = document.getElementById('reportForm');
+      reportForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          // Aqui você adicionaria a lógica para enviar os dados
+          // para seu backend (Google Apps Script, etc.)
+          alert('Obrigado! Sua informação foi enviada com sucesso.');
+          bootstrap.Modal.getInstance(document.getElementById('reportModal')).hide();
+          reportForm.reset();
+      });
+
+      // Renderiza a página inicial
+      renderGrid();
+    });
+  </script>
+
+</body>
+</html>

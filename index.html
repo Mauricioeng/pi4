@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👁️</text></svg>">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Radar Cidadão | Melhorado</title>
@@ -217,6 +216,8 @@
       </ul>
   </nav>
 
+  <li><a href="seviu.html" title="Se Viu?"><svg>...</svg><span class="tooltip">Se Viu?</span></a></li>
+
   <div id="splash-screen">
     <svg class="splash-scene" viewBox="0 0 200 100" xmlns="http://www.w3.org/2000/svg">
       <style> #building1 { animation-delay: 0.2s; } #building2 { animation-delay: 0.4s; } #building3 { animation-delay: 0.6s; } #tree1-trunk { animation-delay: 0.8s; } #tree1-leaves { animation-delay: 1.1s; } #tree2-trunk { animation-delay: 0.9s; } #tree2-leaves { animation-delay: 1.2s; } #sun { animation-delay: 1.4s; } </style>
@@ -295,17 +296,44 @@
                       <div class="d-flex justify-content-between mt-4"> <button type="button" class="btn btn-secondary prev-btn">Voltar</button> <button type="button" class="btn btn-primary next-btn">Avançar</button> </div>
                     </div>
                     <div class="form-step" data-step="3">
-                      <h5 class="mb-3 fw-bold">3. Evidência (Opcional)</h5>
-                      <div class="mb-3">
-                          <label for="imagem" class="form-label">Anexar uma Foto</label>
-                          <input class="form-control" type="file" id="imagem" name="imagem" accept="image/*">
-                          <div class="text-center"> <img id="imagePreview" class="mt-3 rounded" src="" alt="Pré-visualização da imagem" style="display: none; max-width: 100%; max-height: 200px; border: 1px solid var(--border-color); padding: 4px;" /> </div>
-                      </div>
-                      <div class="d-grid gap-2 mt-4 pt-2">
-                          <button type="submit" id="submitButton" class="btn btn-primary btn-lg"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button>
-                          <button type="button" class="btn btn-outline-secondary prev-btn">Voltar</button>
-                      </div>
-                    </div>
+    <h5 class="mb-3 fw-bold">3. Evidência</h5>
+    <div class="mb-3">
+        <label class="form-label">Anexar uma Evidência</label>
+        <div class="d-grid gap-2 d-md-flex">
+            <button type="button" id="startCameraBtn" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-camera-fill" viewBox="0 0 16 16"><path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/><path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828-.828A2 2 0 0 1 3.172 4H2zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1zm9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/></svg>
+                Tirar Foto Agora
+            </button>
+            <label for="imagem" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2" style="cursor: pointer;">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-paperclip" viewBox="0 0 16 16"><path d="M4.5 3a2.5 2.5 0 0 1 5 0v9a1.5 1.5 0 0 1-3 0V5a.5.5 0 0 1 1 0v7a.5.5 0 0 0 1 0V3a1.5 1.5 0 1 0-3 0v9a2.5 2.5 0 0 0 5 0V5a.5.5 0 0 1 1 0v7a3.5 3.5 0 1 1-7 0V3z"/></svg>
+                Escolher Arquivo
+            </label>
+            <input class="form-control" type="file" id="imagem" name="imagem" accept="image/*" style="display: none;">
+        </div>
+    </div>
+
+    <div id="camera-area" class="mt-3 text-center" style="display: none;">
+        <video id="camera-view" playsinline autoplay muted class="rounded" style="width: 100%; max-width: 400px; border: 1px solid var(--border-color);"></video>
+        <canvas id="camera-canvas" style="display: none;"></canvas>
+        <div class="d-grid gap-2 mt-2">
+            <button type="button" id="captureBtn" class="btn btn-danger">Capturar Foto</button>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <img id="imagePreview" class="mt-3 rounded" src="" alt="Pré-visualização da imagem" style="display: none; max-width: 100%; max-height: 200px; border: 1px solid var(--border-color); padding: 4px;" />
+    </div>
+
+    <input type="hidden" id="latitude" name="latitude">
+    <input type="hidden" id="longitude" name="longitude">
+    <input type="hidden" id="direcao" name="direcao">
+    <input type="hidden" id="luminosidade" name="luminosidade">
+
+    <div class="d-grid gap-2 mt-4 pt-2">
+        <button type="submit" id="submitButton" class="btn btn-primary btn-lg"> <span id="buttonText">Enviar Ocorrência</span> <span id="buttonSpinner" class="spinner-border spinner-border-sm" role="status" style="display: none;"></span> </button>
+        <button type="button" class="btn btn-outline-secondary prev-btn">Voltar</button>
+    </div>
+</div>
                   </form>
               </div>
               <div id="status" class="mt-3 text-center"></div>
@@ -327,7 +355,7 @@
     </div>
   </div>
 
-  <script>
+ <script>
     // URL do Google Apps Script para enviar os dados do formulário
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8y2VgR2alokhxidro5N_vkniIKUcsH2ViWaythde4JGkvDr1EQJnVu_zQo80GEMqx/exec';
     const { jsPDF } = window.jspdf;
@@ -350,34 +378,45 @@
         });
       }
 
+      // --- INICIALIZAÇÃO DOS SENSORES ---
+      initializeSensors();
+
       // --- LÓGICA DO FORMULÁRIO E DA PÁGINA ---
       const splashScreen = document.getElementById('splash-screen');
       const mainContent = document.getElementById('main-content');
       const subtitle = document.getElementById('splash-subtitle');
       const greetingEl = document.getElementById('greeting');
       const motivationalQuoteEl = document.getElementById('motivational-quote');
+      const countEl = document.getElementById('count');
+      const counterContainer = document.getElementById('ocorrencia-counter');
 
-      // Frases motivacionais e saudações
-      const motivationalQuotes = [
-          "A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.",
-          "Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.",
-          "Sua participação é a ferramenta mais poderosa para o bem-estar da comunidade."
-      ];
+      async function fetchCount() {
+          try {
+              const response = await fetch(`${SCRIPT_URL}?action=getCount`);
+              if (!response.ok) throw new Error('Falha na resposta da rede.');
+              const result = await response.json();
+              if (result.status === 'success') {
+                  countEl.textContent = result.count;
+                  counterContainer.style.opacity = 1;
+              } else { throw new Error(result.message); }
+          } catch (error) {
+              console.error('Erro ao buscar contagem:', error);
+              counterContainer.style.display = 'none';
+          }
+      }
+      fetchCount();
+
+      const motivationalQuotes = ["A mudança que você quer ver na sua cidade começa com a sua atitude.", "Cidadania é a prática diária de cuidar do que é de todos nós.", "Pequenas ações, como relatar um problema, geram grandes transformações.", "Cada ocorrência registrada é um passo em direção a uma cidade mais segura e eficiente.", "Sua participação é a ferramenta mais poderosa para o bem-estar da comunidade."];
       motivationalQuoteEl.textContent = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
       
       const textToType = "A sua voz para uma cidade melhor.";
-      setTimeout(() => {
-        // speakWelcomeMessage(); // Removido por ser uma má prática de UX sem consentimento do usuário
-        subtitle.textContent = textToType;
-      }, 2200);
+      setTimeout(() => { subtitle.textContent = textToType; }, 2200);
 
-      // Transição da tela de abertura para o conteúdo principal
       setTimeout(() => {
         splashScreen.classList.add('hidden');
         mainContent.classList.add('visible');
-      }, 3500); // Tempo reduzido para uma experiência mais ágil
+      }, 3500); 
 
-      // Mensagem de saudação baseada na hora do dia
       const hour = new Date().getHours();
       const bomDiaMessages = [ "Bom dia! Pronto para fazer a diferença hoje?", "Bom dia! O sol nasceu, e com ele a chance de melhorar nosso bairro." ];
       const boaTardeMessages = [ "Boa tarde! Sua ação pode resolver um grande problema.", "Boa tarde! Como podemos ajudar a cidade agora?" ];
@@ -385,7 +424,6 @@
       let messages = (hour >= 5 && hour < 12) ? bomDiaMessages : (hour >= 12 && hour < 18) ? boaTardeMessages : boaNoiteMessages;
       greetingEl.textContent = messages[Math.floor(Math.random() * messages.length)];
 
-      // Variáveis do formulário
       let currentStep = 1;
       const form = document.getElementById('radarForm');
       const cardFlipper = document.getElementById('card-flipper');
@@ -394,26 +432,22 @@
       const steps = document.querySelectorAll('.form-step');
       const totalSteps = steps.length;
       
-      // Função para mostrar a etapa atual do formulário
       const showStep = (stepNumber) => {
         steps.forEach(step => step.classList.remove('active'));
         document.querySelector(`.form-step[data-step="${stepNumber}"]`).classList.add('active');
         updateProgressBar(stepNumber);
       }
       
-      // Função para atualizar a barra de progresso
       const updateProgressBar = (stepNumber) => {
         const progress = (stepNumber / totalSteps) * 100;
         progressBar.style.width = `${progress}%`;
         progressBarLabel.textContent = `Etapa ${stepNumber} de ${totalSteps}`;
       }
 
-      // Função para validar campos obrigatórios da etapa atual
       const validateStep = (stepNumber) => {
         let isValid = true;
         const currentStepElement = document.querySelector(`.form-step[data-step="${stepNumber}"]`);
         const requiredFields = currentStepElement.querySelectorAll('[required]');
-        
         requiredFields.forEach(field => {
             field.classList.remove('is-invalid-shake');
             if (!field.value.trim()) {
@@ -422,46 +456,26 @@
               setTimeout(() => field.classList.remove('is-invalid-shake'), 500);
             }
         });
-
-        if (stepNumber === 1) {
-            const nomeInput = document.getElementById('nome');
-            const nomeValue = nomeInput.value.trim();
-            if (nomeValue && !/^[a-zA-Z\u00C0-\u017F\s']{3,}$/.test(nomeValue)) {
-                isValid = false; 
-                nomeInput.classList.add('is-invalid-shake');
-                showError('Se preenchido, o nome deve ser válido.');
-                setTimeout(() => nomeInput.classList.remove('is-invalid-shake'), 500);
-            }
-        }
         if (!isValid && !document.querySelector('.alert')) {
             showError('Por favor, preencha os campos obrigatórios.');
         }
         return isValid;
       }
       
-      // Navegação do formulário
-      document.querySelectorAll('.next-btn').forEach(button => {
-        button.addEventListener('click', () => { if (validateStep(currentStep)) { currentStep++; showStep(currentStep); } });
-      });
-      document.querySelectorAll('.prev-btn').forEach(button => {
-        button.addEventListener('click', () => { currentStep--; showStep(currentStep); });
-      });
+      document.querySelectorAll('.next-btn').forEach(button => { button.addEventListener('click', () => { if (validateStep(currentStep)) { currentStep++; showStep(currentStep); } }); });
+      document.querySelectorAll('.prev-btn').forEach(button => { button.addEventListener('click', () => { currentStep--; showStep(currentStep); }); });
 
-      // Elementos do formulário
       const phoneInput = document.getElementById('telefone');
-      const descriptionInput = document.getElementById('descricao');
-      const aiSuggestionEl = document.getElementById('ai-suggestion');
-      const categoriaSelect = document.getElementById('categoria');
-
-      // Máscara para o campo de telefone
       phoneInput.addEventListener('input', (e) => {
         let value = e.target.value.replace(/\D/g, '').slice(0, 11);
         value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
         value = value.replace(/(\d{5})(\d)/, '$1-$2');
         e.target.value = value;
       });
-
-      // Sugestão de categoria por IA (baseada em palavras-chave)
+      
+      const descriptionInput = document.getElementById('descricao');
+      const aiSuggestionEl = document.getElementById('ai-suggestion');
+      const categoriaSelect = document.getElementById('categoria');
       const keywordMap = { 'lâmpada': 'Iluminação pública', 'poste': 'Iluminação pública', 'escuro': 'Iluminação pública', 'luz': 'Iluminação pública', 'buraco': 'Buraco na via', 'asfalto': 'Buraco na via', 'cratera': 'Buraco na via', 'água': 'Vazamento de água', 'cano': 'Vazamento de água', 'vazando': 'Vazamento de água', 'lixo': 'Limpeza de terreno / Lixo', 'sujeira': 'Limpeza de terreno / Lixo', 'entulho': 'Limpeza de terreno / Lixo', 'barulho': 'Poluição sonora', 'som alto': 'Poluição sonora', 'pichação': 'Poluição visual', 'cartaz': 'Poluição visual', 'placa': 'Poluição visual', 'assalto': 'Segurança pública', 'roubo': 'Segurança pública', 'suspeito': 'Segurança pública', 'posto': 'Saúde', 'ambulância': 'Saúde', 'atendimento': 'Saúde' };
       descriptionInput.addEventListener('input', () => {
           const text = descriptionInput.value.toLowerCase();
@@ -471,27 +485,19 @@
                   const category = keywordMap[keyword];
                   aiSuggestionEl.innerHTML = `💡 Sugestão: <strong>${category}</strong>`;
                   aiSuggestionEl.style.display = 'block';
-                  if (categoriaSelect.value !== category) { 
-                    categoriaSelect.value = category; 
-                    categoriaSelect.dispatchEvent(new Event('change')); 
-                  }
+                  if (categoriaSelect.value !== category) { categoriaSelect.value = category; categoriaSelect.dispatchEvent(new Event('change')); }
                   suggestionMade = true; break;
               }
           }
           if (!suggestionMade) { aiSuggestionEl.style.display = 'none'; }
       });
 
-      // Mostrar subcategorias quando aplicável
       categoriaSelect.addEventListener('change', (e) => {
         const selectedCategory = e.target.value;
-        document.querySelectorAll('.sub-category-wrapper').forEach(wrapper => {
-            wrapper.style.display = 'none';
-            wrapper.querySelector('select')?.removeAttribute('name');
-        });
+        document.querySelectorAll('.sub-category-wrapper').forEach(wrapper => { wrapper.style.display = 'none'; wrapper.querySelector('select')?.removeAttribute('name'); });
         let targetId = null;
         if (selectedCategory === 'Iluminação pública') targetId = 'sub-categoria-iluminacao';
         else if (selectedCategory === 'Vazamento de água') targetId = 'sub-categoria-agua';
-        
         if (targetId) {
           const targetWrapper = document.getElementById(targetId);
           targetWrapper.style.display = 'block';
@@ -499,7 +505,6 @@
         }
       });
       
-      // Botão de Geolocalização
       document.getElementById('getLocationBtn').addEventListener('click', function() {
         if (!navigator.geolocation) { showError('Geolocalização não é suportada.'); return; }
         const btn = this;
@@ -508,6 +513,8 @@
         btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
         navigator.geolocation.getCurrentPosition(
           (position) => {
+            document.getElementById('latitude').value = position.coords.latitude;
+            document.getElementById('longitude').value = position.coords.longitude;
             fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${position.coords.latitude}&lon=${position.coords.longitude}`)
               .then(res => res.json()).then(data => { document.getElementById('endereco').value = data.display_name || ''; })
               .catch(() => showError('Erro ao obter nome do endereço.'))
@@ -517,48 +524,75 @@
         );
       });
 
-      // Pré-visualização da imagem
+      // --- NOVA LÓGICA DE CÂMERA E SENSORES ---
       const imageInput = document.getElementById('imagem');
       const imagePreview = document.getElementById('imagePreview');
+      const startCameraBtn = document.getElementById('startCameraBtn');
+      const cameraArea = document.getElementById('camera-area');
+      const cameraView = document.getElementById('camera-view');
+      const cameraCanvas = document.getElementById('camera-canvas');
+      const captureBtn = document.getElementById('captureBtn');
+      let capturedImageData = null;
+      let stream = null;
+
+      startCameraBtn.addEventListener('click', async () => {
+          if (stream) { stream.getTracks().forEach(track => track.stop()); } // Parar stream anterior
+          try {
+              stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+              cameraView.srcObject = stream;
+              cameraArea.style.display = 'block';
+          } catch (err) {
+              console.error("Erro ao acessar a câmera: ", err);
+              showError("Não foi possível acessar a câmera. Verifique as permissões.");
+          }
+      });
+
+      captureBtn.addEventListener('click', () => {
+          cameraCanvas.width = cameraView.videoWidth;
+          cameraCanvas.height = cameraView.videoHeight;
+          cameraCanvas.getContext('2d').drawImage(cameraView, 0, 0);
+          capturedImageData = cameraCanvas.toDataURL('image/jpeg', 0.8);
+          imagePreview.src = capturedImageData;
+          imagePreview.style.display = 'block';
+          cameraArea.style.display = 'none';
+          stream.getTracks().forEach(track => track.stop()); // Desliga a câmera
+          imageInput.value = ''; // Limpa o input de arquivo
+      });
+
       imageInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (e) => { imagePreview.src = e.target.result; imagePreview.style.display = 'block'; };
+          reader.onload = (e) => { 
+              imagePreview.src = e.target.result; 
+              imagePreview.style.display = 'block'; 
+              capturedImageData = e.target.result; // Armazena como base64
+          };
           reader.readAsDataURL(file);
-        } else { imagePreview.src = ''; imagePreview.style.display = 'none'; }
+        } else { imagePreview.src = ''; imagePreview.style.display = 'none'; capturedImageData = null; }
       });
       
-      // Envio do formulário
       let lastSubmittedData = {};
       form.addEventListener('submit', function(e) {
         e.preventDefault();
         if (!validateStep(currentStep)) return;
         setLoading(true);
 
-        const file = imageInput.files[0];
         let data = Object.fromEntries(new FormData(form));
         data.protocolo = `RC-${Date.now()}`;
         
         lastSubmittedData = data;
 
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (event) => { 
-            const [, base64String] = event.target.result.split(','); 
-            data.imagemBase64 = base64String; 
-            data.imagemMimeType = file.type; 
-            data.imagemNome = file.name; 
-            sendData(data); 
-          };
-          reader.onerror = () => { showError('Não foi possível ler o arquivo de imagem.'); setLoading(false); };
-          reader.readAsDataURL(file);
-        } else { 
-          sendData(data); 
+        if (capturedImageData) {
+            const [, base64String] = capturedImageData.split(',');
+            data.imagemBase64 = base64String;
+            data.imagemMimeType = capturedImageData.match(/data:(.*);/)[1];
+            data.imagemNome = `captura-${data.protocolo}.jpg`;
+            delete data.imagem; // Remove o campo de arquivo, pois já temos o base64
         }
+        sendData(data);
       });
 
-      // Função para enviar os dados para o Google Apps Script
       const sendData = (data) => {
         fetch(SCRIPT_URL, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) })
         .then(response => response.json())
@@ -566,26 +600,24 @@
           if (result.status === 'success') {
             const postSubmissionInfo = document.getElementById('post-submission-info');
             let specificMessage = '';
-            if (data.categoria === 'Poluição sonora') { specificMessage = `<p class="mb-2"><strong>Atenção:</strong> Ocorrências de poluição sonora podem exigir análise e monitoramento no local.</p>`; } 
-            else if (data.categoria === 'Buraco na via') { specificMessage = `<p class="mb-2"><strong>Ação Imediata:</strong> Sua ocorrência já foi encaminhada para o setor de manutenção e obras.</p>`; }
+            if (data.categoria === 'Poluição sonora') specificMessage = `<p class="mb-2"><strong>Atenção:</strong> Ocorrências de poluição sonora podem exigir análise e monitoramento no local.</p>`;
+            else if (data.categoria === 'Buraco na via') specificMessage = `<p class="mb-2"><strong>Ação Imediata:</strong> Sua ocorrência já foi encaminhada para o setor de manutenção e obras.</p>`;
             const generalMessage = `<p class="mb-1 fst-italic">As informações são direcionadas à prefeitura de imediato.</p>`;
             postSubmissionInfo.innerHTML = specificMessage + generalMessage;
             cardFlipper.classList.add('is-flipped');
-          } else { 
-            throw new Error(result.message || 'Ocorreu um erro desconhecido.'); 
-          }
+          } else { throw new Error(result.message || 'Ocorreu um erro desconhecido.'); }
         })
         .catch(error => { showError(`<strong>Erro ao enviar:</strong> ${error.message}`); })
         .finally(() => setLoading(false));
       }
       
-      // Botão para registrar nova ocorrência
       document.getElementById('newReportBtn').addEventListener('click', () => {
         cardFlipper.classList.remove('is-flipped');
         setTimeout(() => {
             form.reset();
             document.querySelectorAll('.sub-category-wrapper').forEach(w => w.style.display = 'none');
             imagePreview.style.display = 'none';
+            capturedImageData = null;
             aiSuggestionEl.style.display = 'none';
             document.getElementById('status').innerHTML = '';
             currentStep = 1;
@@ -594,7 +626,6 @@
         }, 600);
       });
       
-      // Funções de feedback para o usuário
       const statusDiv = document.getElementById('status');
       const showError = (message) => {
           setLoading(false);
@@ -609,7 +640,55 @@
         submitButton.querySelector('#buttonSpinner').style.display = isLoading ? 'inline-block' : 'none';
       }
 
-      // Inicializa o formulário na primeira etapa
+      function initializeSensors() {
+          // 1. Sensor de Orientação (Bússola)
+          const handleOrientation = (event) => {
+              let direction = event.alpha; // 0-360, onde 0 é Norte
+              if (direction !== null) {
+                  document.getElementById('direcao').value = direction.toFixed(2);
+              }
+          };
+
+          if (window.DeviceOrientationEvent) {
+              // Tratamento especial para iOS 13+ que exige permissão explícita
+              if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                  // Adicionar um botão ou um evento (ex: primeiro toque) para pedir permissão
+                  // Por simplicidade aqui, vamos tentar ao carregar. O ideal é atrelar a um clique.
+                  DeviceOrientationEvent.requestPermission()
+                      .then(permissionState => {
+                          if (permissionState === 'granted') {
+                              window.addEventListener('deviceorientation', handleOrientation);
+                          }
+                      })
+                      .catch(console.error);
+              } else {
+                  // Para outros dispositivos (Android)
+                  window.addEventListener('deviceorientation', handleOrientation);
+              }
+          }
+
+          // 2. Sensor de Luminosidade
+          try {
+              if ('AmbientLightSensor' in window) {
+                  navigator.permissions.query({ name: 'ambient-light-sensor' }).then(result => {
+                    if (result.state === 'denied') {
+                      console.log('Permissão para sensor de luz negada.');
+                      return;
+                    }
+                    const sensor = new AmbientLightSensor({ frequency: 1 });
+                    sensor.onreading = () => {
+                        document.getElementById('luminosidade').value = sensor.illuminance.toFixed(2);
+                        sensor.stop(); // Lê apenas uma vez para economizar bateria
+                    };
+                    sensor.onerror = (event) => console.log(event.error.name, event.error.message);
+                    sensor.start();
+                  });
+              }
+          } catch(e) {
+              console.log("Sensor de luminosidade não suportado ou bloqueado.", e);
+          }
+      }
+
       updateProgressBar(currentStep);
     });
   </script>
